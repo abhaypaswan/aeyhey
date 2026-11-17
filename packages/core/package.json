@@ -38,7 +38,7 @@
     "@ai-sdk/openai": "^2.0.0",
     "@mozilla/readability": "^0.5.0",
     "@node-rs/argon2": "^2.0.2",
-    "ai": "^5.0.0",
+    "ai": "^7.0.173",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "drizzle-orm": "^0.45.4",
