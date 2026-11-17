@@ -1,0 +1,52 @@
+{
+  "name": "aeyhey-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "description": "Aeyhey: spaced repetition for your saved links and your interview prep.",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.12.3",
+  "scripts": {
+    "dev": "pnpm --filter @aeyhey/web dev",
+    "dev:worker": "pnpm --filter @aeyhey/web worker",
+    "build": "pnpm -r build",
+    "start": "pnpm --filter @aeyhey/web start",
+    "worker": "pnpm --filter @aeyhey/web worker",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "pnpm --filter @aeyhey/web test:e2e",
+    "db:generate": "pnpm --filter @aeyhey/core db:generate",
+    "db:migrate": "pnpm --filter @aeyhey/core db:migrate",
+    "demo:seed": "pnpm --filter @aeyhey/core demo:seed",
+    "demo:reset": "pnpm --filter @aeyhey/core demo:reset",
+    "api:spec": "pnpm --filter @aeyhey/core api:spec",
+    "check:spdx": "node scripts/check-spdx.mjs",
+    "check:all": "pnpm format:check && pnpm lint && pnpm check:spdx && pnpm typecheck && pnpm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "@types/node": "^22.9.0",
+    "eslint": "^9.15.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.12.0",
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.8",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.15.0",
+    "vitest": "^2.1.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild",
+      "@node-rs/argon2"
+    ]
+  }
+}

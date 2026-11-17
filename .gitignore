@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# env and secrets
+.env
+.env.*
+!.env.example
+secrets.json
+*.pem
+
+# runtime data, at the root only: a bare "data/" also hid apps/web/app/api/data
+/data/
+/uploads/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# test and tooling output
+coverage/
+playwright-report/
+test-results/
+.vitest/
+
+# editors and os
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/abhaypaswan/aeyhey/security/advisories/new
+    about: Report privately through GitHub, never in a public issue.
+  - name: Self-hosting docs
+    url: https://github.com/abhaypaswan/aeyhey#install
+    about: Docker Compose, Ollama, Postgres and environment variables.

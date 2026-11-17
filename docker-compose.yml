@@ -1,0 +1,47 @@
+# Aeyhey, default self-host setup: SQLite in one file, one web service, one worker.
+#   docker compose up -d
+#   open http://localhost:3000
+services:
+  web:
+    image: ghcr.io/abhaypaswan/aeyhey:latest
+    # Build locally instead of pulling with: docker compose up --build
+    build:
+      context: .
+    command: ["web"]
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      DATA_DIR: /data
+      DATABASE_URL: ${DATABASE_URL:-file:/data/aeyhey.db}
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  worker:
+    image: ghcr.io/abhaypaswan/aeyhey:latest
+    build:
+      context: .
+    command: ["worker"]
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      DATA_DIR: /data
+      DATABASE_URL: ${DATABASE_URL:-file:/data/aeyhey.db}
+    volumes:
+      - ./data:/data
+    depends_on:
+      web:
+        condition: service_healthy
