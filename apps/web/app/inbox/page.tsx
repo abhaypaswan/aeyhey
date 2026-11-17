@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The inbox (PRD 12.1 screen 4, 8.1 FR-LINK-8).
+// The inbox. See components/inbox-view.tsx.
 
 import { redirect } from "next/navigation";
 import { repos } from "@aeyhey/core";
@@ -20,9 +20,13 @@ export default async function InboxPage({
   if (state.state === "needs_login") redirect("/login");
 
   const params = await searchParams;
-  const status = STATUSES.includes(params["status"] as never)
-    ? (params["status"] as (typeof STATUSES)[number])
-    : undefined;
+  // Unread unless asked otherwise, as on the phone; "all" lifts the filter.
+  const all = params["status"] === "all";
+  const status = all
+    ? undefined
+    : STATUSES.includes(params["status"] as never)
+      ? (params["status"] as (typeof STATUSES)[number])
+      : "unread";
 
   const { scope } = state.context;
   const [page, counts, tags] = await Promise.all([
@@ -46,7 +50,7 @@ export default async function InboxPage({
       nextCursor={page.nextCursor}
       counts={counts}
       tags={tags.map((tag) => tag.name)}
-      activeStatus={status ?? null}
+      activeStatus={status ?? "all"}
       activeTag={params["tag"] ?? null}
       query={params["q"] ?? ""}
     />

@@ -10,7 +10,7 @@
 import { useState } from "react";
 import { apiClient, ApiRequestError } from "../lib/client";
 import { Tabs, TabsList, TabsTab } from "@ui-sdk/react/tabs";
-import { Button, Card, CardTitle, Columns, Field, Notice, Page, PageHeader } from "./ui";
+import { Button, Card, CardTitle, Columns, Field, Notice, Page, cx } from "./ui";
 import { AppearanceSettings } from "./appearance-settings";
 import { SignedInApps } from "./signed-in-apps";
 import { NumberBox, SearchSelectField, SelectField, SliderBox, SwitchField, TimeBox } from "./form";
@@ -109,6 +109,45 @@ const MIX_MODES = [
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+function ordinal(day: number): string {
+  const tail =
+    day % 100 >= 11 && day % 100 <= 13
+      ? "th"
+      : (({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[day % 10] ?? "th");
+  return `${day}${tail}`;
+}
+
+/** "Every Mon, Wed and Fri at 09:00", as the phone's Settings says it. */
+function scheduleSentence(settings: Settings): string {
+  const at = `at ${settings.sendTime}`;
+  if (settings.cadence === "daily") return `Every day ${at}`;
+  if (settings.cadence === "monthly") {
+    return settings.cadenceDayOfMonth === -1
+      ? `On the last day of each month ${at}`
+      : `On the ${ordinal(settings.cadenceDayOfMonth)} of each month ${at}`;
+  }
+  const days = [...settings.cadenceWeekdays].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+  if (days.length === 1) return `Every ${DAY_NAMES[days[0] ?? 1]} ${at}`;
+  const short = days.map((day) => WEEKDAYS[day] ?? "");
+  const list = `${short.slice(0, -1).join(", ")} and ${short[short.length - 1]}`;
+  return `Every ${list} ${at}`;
+}
+
+function sessionSentence(settings: Settings): string {
+  const cards = `${settings.cardsPerSession} card${settings.cardsPerSession === 1 ? "" : "s"} a session`;
+  const fresh =
+    settings.maxNewQuestions > 0
+      ? `, with up to ${settings.maxNewQuestions} new question${settings.maxNewQuestions === 1 ? "" : "s"} kept ready.`
+      : ", no new questions.";
+  const quiet = settings.quietHours
+    ? ` Quiet from ${settings.quietHours.start} to ${settings.quietHours.end}.`
+    : "";
+  const paused = settings.pausedUntil ? " Reminders are paused." : "";
+  return `${cards}${fresh}${quiet}${paused}`;
+}
+
 export function SettingsView({
   initial,
   locked,
@@ -162,10 +201,21 @@ export function SettingsView({
 
   return (
     <Page width="wide">
-      <PageHeader
-        title="Settings"
-        subtitle="How often Aeyhey reminds you, what goes into a session, and how the app looks."
-      />
+      <header className="flex flex-col gap-1">
+        <h1 className="font-display text-[30px] font-[640] leading-[1.1] lg:text-4xl">Settings</h1>
+        {/* The schedule said back in one sentence, which changes as the controls do. */}
+        <p
+          className={cx(
+            "font-display mt-1.5 text-[19px] font-[560] leading-[1.3] lg:text-[22px]",
+            settings.pausedUntil ? "text-muted-foreground" : "text-primary",
+          )}
+        >
+          {scheduleSentence(settings)}
+        </p>
+        <p className="text-muted-foreground text-[15px] leading-[1.45]">
+          {sessionSentence(settings)}
+        </p>
+      </header>
 
       <Tabs
         value={tab}

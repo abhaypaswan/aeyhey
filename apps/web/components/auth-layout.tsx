@@ -26,14 +26,14 @@ export function AuthLayout({
         aria-label="About Aeyhey"
         className="border-border bg-surface hidden flex-col justify-between gap-10 border-r p-12 lg:flex xl:p-16"
       >
-        <div className="flex items-center gap-3 text-lg font-extrabold">
+        <div className="font-display flex items-center gap-3 text-xl font-semibold">
           <BrandMark size="lg" />
           Aeyhey
         </div>
 
         <div className="flex max-w-xl flex-col gap-8">
           <div className="flex flex-col gap-3">
-            <p className="text-4xl font-extrabold tracking-tight">
+            <p className="font-display text-[44px] font-semibold leading-[1.08] tracking-[-0.018em]">
               Stop hoarding links. Start remembering them.
             </p>
             <p className="text-muted-foreground text-lg">
@@ -45,7 +45,7 @@ export function AuthLayout({
           <ol className="flex flex-col gap-5">
             {HOW_IT_WORKS_STEPS.map((step, index) => (
               <li key={step.title} className="flex gap-4">
-                <span className="bg-primary-soft text-primary grid size-9 shrink-0 place-items-center rounded-xl font-extrabold">
+                <span className="bg-primary-soft text-primary grid size-9 shrink-0 place-items-center rounded-full font-bold">
                   {index + 1}
                 </span>
                 <span className="flex flex-col gap-0.5">

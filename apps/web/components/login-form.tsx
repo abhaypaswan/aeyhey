@@ -67,7 +67,7 @@ export function LoginForm({
   return (
     <AuthLayout>
       <header className="flex flex-col gap-1 text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+        <h1 className="font-display text-[30px] font-[640] leading-[1.1]">Welcome back</h1>
         <p className="text-muted-foreground text-sm">
           {needsEmail ? "Sign in to your instance." : "Just your password. There is no username."}
         </p>

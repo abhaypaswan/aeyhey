@@ -32,18 +32,17 @@ export type ButtonTone = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const TONES: Record<ButtonTone, string> = {
-  primary:
-    "bg-primary text-primary-foreground hover:bg-primary-hover shadow-card active:shadow-pressed",
+  primary: "bg-primary text-primary-foreground hover:bg-primary-hover",
   secondary:
-    "bg-surface text-foreground border border-border hover:border-border-strong hover:bg-raised shadow-card",
-  ghost: "text-muted-foreground hover:text-foreground hover:bg-sunken",
-  danger: "bg-danger text-white hover:opacity-90 shadow-card",
+    "bg-quiet text-foreground border border-[light-dark(var(--color-border),transparent)] hover:border-border-strong",
+  ghost: "text-muted-foreground hover:text-foreground hover:bg-quiet",
+  danger: "bg-danger text-white hover:opacity-90",
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  sm: "min-h-9 px-3 text-xs gap-1.5 rounded-lg",
-  md: "min-h-11 px-4 text-sm gap-2 rounded-lg",
-  lg: "min-h-13 px-6 text-base gap-2.5 rounded-xl",
+  sm: "min-h-9 px-3.5 text-[13px] gap-1.5 rounded-full",
+  md: "min-h-11 px-[18px] text-sm gap-2 rounded-full",
+  lg: "min-h-[2.875rem] px-6 text-[15px] gap-2.5 rounded-full",
 };
 
 export function Button({
@@ -123,7 +122,7 @@ export function Card({
   return (
     <div
       className={cx(
-        "bg-surface border-border shadow-card rounded-xl border",
+        "bg-surface rounded-[22px] border border-[light-dark(var(--color-border),transparent)]",
         pad,
         interactive && "lift cursor-pointer",
         className,
@@ -336,10 +335,10 @@ export function Field({
 }
 
 export const inputClass =
-  "bg-surface border-border text-foreground placeholder:text-subtle-foreground focus-visible:border-primary min-h-11 w-full rounded-lg border px-3.5 text-sm outline-none transition-colors";
+  "bg-sunken border-[light-dark(var(--color-border),transparent)] text-foreground placeholder:text-subtle-foreground focus-visible:border-primary min-h-11 w-full rounded-2xl border px-4 text-[15px] outline-none transition-colors";
 
 export const textareaClass =
-  "bg-surface border-border text-foreground placeholder:text-subtle-foreground focus-visible:border-primary w-full resize-y rounded-lg border p-3.5 text-sm outline-none transition-colors";
+  "bg-sunken border-[light-dark(var(--color-border),transparent)] text-foreground placeholder:text-subtle-foreground focus-visible:border-primary w-full resize-y rounded-2xl border px-4 py-3 text-[15px] outline-none transition-colors";
 
 /** UI SDK's Input in Aeyhey's field style. Takes every native input prop. */
 export function Input({
@@ -360,9 +359,9 @@ export function Textarea({
 // ---------------------------------------------------------------- layout
 
 /**
- * The frame every screen inside the app shell sits in. It fills the space beside the
- * sidebar instead of holding a phone-width column in the middle of a wide screen; the
- * narrower widths are for a screen that is one form and would look lost stretched out.
+ * The frame every screen inside the app shell sits in: the same column as Home, under
+ * the top bar. The narrow width is for a screen that is one form and would look lost
+ * stretched out.
  */
 export function Page({
   children,
@@ -373,11 +372,11 @@ export function Page({
   width?: "full" | "wide" | "narrow";
   className?: string;
 }) {
-  const widths = { full: "max-w-[96rem]", wide: "max-w-6xl", narrow: "max-w-3xl" };
+  const widths = { full: "max-w-6xl", wide: "max-w-6xl", narrow: "max-w-3xl" };
   return (
     <main
       className={cx(
-        "mx-auto flex w-full flex-col gap-6 px-4 pb-28 pt-6 max-sm:gap-5 max-sm:pt-5 sm:px-6 lg:px-10 lg:pb-14 lg:pt-8",
+        "mx-auto flex w-full flex-col gap-6 px-[22px] pb-16 pt-2 max-sm:gap-5 sm:px-6 lg:px-8 lg:pt-8",
         widths[width],
         className,
       )}
@@ -407,9 +406,9 @@ export function PageHeader({
         {back ? (
           <a
             href={back.href}
-            className="text-subtle-foreground hover:text-foreground mb-1 inline-flex items-center gap-1 self-start text-xs font-semibold"
+            className="text-foreground hover:bg-quiet -ml-2 mb-1 inline-flex items-center gap-1.5 self-start rounded-full py-2 pl-2 pr-3 text-sm font-medium"
           >
-            <ChevronLeft size={14} aria-hidden="true" />
+            <ChevronLeft size={18} aria-hidden="true" />
             {back.label}
           </a>
         ) : null}
@@ -418,9 +417,11 @@ export function PageHeader({
             {eyebrow}
           </p>
         ) : null}
-        <h1 className="text-2xl font-bold lg:text-[1.875rem] lg:leading-9">{title}</h1>
+        <h1 className="font-display text-[30px] font-[640] leading-[1.1] lg:text-4xl">{title}</h1>
         {subtitle ? (
-          <p className="text-muted-foreground max-w-[70ch] text-sm lg:text-base">{subtitle}</p>
+          <p className="text-muted-foreground max-w-[62ch] text-[15px] leading-[1.45] lg:text-base">
+            {subtitle}
+          </p>
         ) : null}
       </div>
       {action ? <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div> : null}
@@ -476,8 +477,8 @@ export function CardTitle({
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 flex-col">
-        <h2 className="text-sm font-bold">{children}</h2>
-        {hint ? <p className="text-subtle-foreground text-xs">{hint}</p> : null}
+        <h2 className="font-display text-[17px] font-[640] tracking-[-0.006em]">{children}</h2>
+        {hint ? <p className="text-muted-foreground text-[13px]">{hint}</p> : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>

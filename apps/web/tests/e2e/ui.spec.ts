@@ -136,24 +136,24 @@ test.describe("the session", () => {
   test("an action offers an undo in a toast, and taking it steps back", async ({ page }) => {
     await openSessionWithACard(page);
 
-    const progress = page.getByText(/\d+ of \d+/);
-    const before = await progress.textContent();
+    const progress = page.getByRole("img", { name: /card \d+ of \d+/i });
+    const before = await progress.getAttribute("aria-label");
 
     await anAction(page).first().click();
 
-    const undo = page.getByRole("button", { name: "Undo" });
+    const undo = page.getByRole("button", { name: /undo/i });
     await expect(undo).toBeVisible();
 
     await undo.click();
     await expect(undo).toBeHidden();
-    await expect(progress).toHaveText(before ?? "");
+    await expect(progress).toHaveAttribute("aria-label", before ?? "");
   });
 
   test("only the most recent action can be undone", async ({ page }) => {
     await openSessionWithACard(page);
 
     await anAction(page).first().click();
-    await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /undo/i })).toBeVisible();
 
     // The session may have run out of cards on the first action, in which case there is
     // no second one to take and nothing left to check here.
@@ -165,60 +165,70 @@ test.describe("the session", () => {
 
     // The earlier offer is withdrawn rather than left promising an undo it can no
     // longer carry out.
-    await expect(page.getByRole("button", { name: "Undo" })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: /undo/i })).toHaveCount(1);
   });
 });
 
 test.describe("deck detail", () => {
-  test("filtering by difficulty is one control, not a row of buttons", async ({ page }) => {
+  async function openADeck(page: Page): Promise<void> {
     await page.goto("/decks");
     await page
       .getByRole("link")
       .filter({ hasText: /questions/ })
       .first()
       .click();
+    await expect(page.getByRole("heading", { name: "Questions" })).toBeVisible();
+  }
 
-    const filter = page.getByRole("radiogroup", { name: /filter by difficulty/i });
-    await expect(filter).toBeVisible();
-    await expect(filter.getByRole("radio", { name: "All" })).toBeChecked();
+  test("questions filter by how far along they are", async ({ page }) => {
+    await openADeck(page);
 
-    await filter.getByRole("radio", { name: "Hard" }).click();
-    await expect(filter.getByRole("radio", { name: "Hard" })).toBeChecked();
+    const filters = page.getByRole("navigation", { name: /filter questions/i });
+    await expect(filters.getByRole("button", { name: /^All/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await filters.getByRole("button", { name: /^Learned/ }).click();
+    await expect(filters.getByRole("button", { name: /^Learned/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(filters.getByRole("button", { name: /^All/ })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 
-  test("the model answer opens and shuts", async ({ page }) => {
-    await page.goto("/decks");
-    await page
-      .getByRole("link")
-      .filter({ hasText: /questions/ })
-      .first()
-      .click();
+  test("a question turns over to its model answer, and back", async ({ page }) => {
+    await openADeck(page);
 
-    const trigger = page.getByRole("button", { name: "Model answer" }).first();
+    const trigger = page.getByRole("region", { name: "Questions" }).locator("li button").first();
     await expect(trigger).toHaveAttribute("aria-expanded", "false");
 
     await trigger.click();
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await trigger.click();
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
-  test("deleting a question asks first, and cancelling keeps it", async ({ page }) => {
-    await page.goto("/decks");
+  test("removing a question asks first, and cancelling keeps it", async ({ page }) => {
+    await openADeck(page);
+
+    // Counted once the first question is open, since its key points are list items too.
+    await page.getByRole("region", { name: "Questions" }).locator("li button").first().click();
+    const questions = page.getByRole("region", { name: "Questions" }).getByRole("listitem");
+    const countBefore = await questions.count();
     await page
-      .getByRole("link")
-      .filter({ hasText: /questions/ })
+      .getByRole("button", { name: /remove question/i })
       .first()
       .click();
 
-    const questions = page.getByRole("listitem");
-    const countBefore = await questions.count();
-
-    await page.getByRole("button", { name: "Delete" }).first().click();
-
     const confirm = page.getByRole("alertdialog");
     await expect(confirm).toBeVisible();
-    await expect(confirm.getByText(/cannot be undone/i)).toBeVisible();
+    await expect(confirm.getByText(/stops coming up/i)).toBeVisible();
 
-    await confirm.getByRole("button", { name: /keep it/i }).click();
+    await confirm.getByRole("button", { name: "Cancel" }).click();
     await expect(confirm).toBeHidden();
     await expect(questions).toHaveCount(countBefore);
   });

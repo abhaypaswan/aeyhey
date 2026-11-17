@@ -135,7 +135,8 @@ function dayLabel(day: string, today: string): string {
   const diff = Math.round((Date.parse(`${today}T00:00:00Z`) - date.getTime()) / 86_400_000);
   if (diff === 0) return "Today";
   if (diff === 1) return "Yesterday";
-  return date.toLocaleDateString(undefined, {
+  // A fixed locale, so the server's render and the browser's agree.
+  return date.toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",

@@ -21,21 +21,23 @@ test.describe("the demo flow", () => {
     await page.goto("/");
 
     // Either there is something due, or the app says so plainly. Both are correct.
-    const start = page.getByRole("button", { name: /start session/i });
+    const start = page.getByRole("link", { name: /start session/i });
     const caughtUp = page.getByText(/all caught up/i);
     await expect(start.or(caughtUp).first()).toBeVisible();
 
-    await expect(page.getByText(/to read/i)).toBeVisible();
+    await expect(
+      page.getByText(/waiting to be read|on last chance|nothing waiting/i),
+    ).toBeVisible();
   });
 
   test("a session shows one card at a time with its own actions", async ({ page }) => {
     await page.goto("/session");
 
-    // Progress is always "n of m", never a bare number.
-    await expect(page.getByText(/\d+ of \d+/)).toBeVisible();
+    // Progress is a strip with one segment per card, named "Card n of m".
+    await expect(page.getByRole("img", { name: /card \d+ of \d+/i })).toBeVisible();
 
     const linkActions = page.getByRole("button", { name: "Read now" });
-    const questionActions = page.getByRole("button", { name: "Answer" });
+    const questionActions = page.getByRole("textbox", { name: /write your answer/i });
     await expect(linkActions.or(questionActions).first()).toBeVisible();
   });
 
@@ -46,19 +48,20 @@ test.describe("the demo flow", () => {
     // not wait, so asking too early answers "no link here" while one is still rendering.
     // The skip below is then a real one, meaning this session opened on a question.
     const later = page.getByRole("button", { name: "Later" });
-    const answer = page.getByRole("button", { name: "Answer" });
+    const answer = page.getByRole("textbox", { name: /write your answer/i });
     await expect(later.or(answer).first()).toBeVisible();
 
     if (!(await later.isVisible())) {
       test.skip(true, "This session opened with a question card.");
     }
 
-    const first = await page.getByText(/\d+ of \d+/).innerText();
+    const progress = page.getByRole("img", { name: /card \d+ of \d+/i });
+    const first = await progress.getAttribute("aria-label");
     await later.click();
 
-    // Undo is available for ten seconds after any action.
-    await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
-    await expect(page.getByText(/\d+ of \d+/)).not.toHaveText(first);
+    // After any action a strip says when the card comes back, with Undo.
+    await expect(page.getByRole("button", { name: /undo/i })).toBeVisible();
+    await expect(progress).not.toHaveAttribute("aria-label", first ?? "");
   });
 
   test("answering a question gives a score and the model answer", async ({ page }) => {
@@ -68,7 +71,7 @@ test.describe("the demo flow", () => {
     for (let i = 0; i < 5; i += 1) {
       if (
         await page
-          .getByRole("button", { name: "Answer" })
+          .getByRole("textbox", { name: /write your answer/i })
           .isVisible()
           .catch(() => false)
       )
@@ -79,34 +82,38 @@ test.describe("the demo flow", () => {
       await page.waitForTimeout(300);
     }
 
-    const answer = page.getByRole("button", { name: "Answer" });
+    const answer = page.getByRole("textbox", { name: /write your answer/i });
     if (!(await answer.isVisible().catch(() => false))) {
       test.skip(true, "No question card in this session.");
     }
 
-    await answer.click();
-    await page
-      .getByPlaceholder(/answer in your own words/i)
-      .fill("A shared token bucket in Redis, updated atomically, with a retry-after header.");
-    await page.getByRole("button", { name: "Submit" }).click();
+    await answer.fill(
+      "A shared token bucket in Redis, updated atomically, with a retry-after header.",
+    );
+    await page.getByRole("button", { name: /check my answer/i }).click();
 
     await expect(page.getByText(/out of 100/)).toBeVisible();
     await expect(page.getByText("Model answer", { exact: true })).toBeVisible();
-    // All four ratings, with one pre-selected.
+    // All four ratings, with the suggested one already chosen.
+    const ratings = page.getByRole("radiogroup", { name: /how well did you know it/i });
     for (const label of ["Again", "Hard", "Good", "Easy"]) {
-      await expect(page.getByRole("button", { name: label, exact: true })).toBeVisible();
+      await expect(ratings.getByRole("radio", { name: new RegExp(`^${label}`) })).toBeVisible();
     }
+    await expect(page.getByRole("button", { name: /^rate it/i })).toBeVisible();
   });
 
   test("the inbox lists the seeded links and filters by status", async ({ page }) => {
     await page.goto("/inbox");
 
-    await expect(page.getByRole("heading", { name: "Inbox" })).toBeVisible();
+    await expect(page.getByRole("searchbox", { name: /search your links/i })).toBeVisible();
     await expect(
-      page.getByRole("link", { name: /Postgres|SQLite|distributed/i }).first(),
+      page.getByRole("link", { name: /Postgres|SQLite|distributed|fsrs|codebase/i }).first(),
     ).toBeVisible();
 
-    await page.getByRole("link", { name: /^Snoozed/ }).click();
+    await page
+      .getByRole("navigation", { name: /filter your links/i })
+      .getByRole("link", { name: /^Later/ })
+      .click();
     await expect(page).toHaveURL(/status=snoozed/);
   });
 
@@ -120,7 +127,9 @@ test.describe("the demo flow", () => {
     await expect(deck).toBeVisible();
     await deck.click();
 
-    await expect(page.getByRole("button", { name: /start a session/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Questions" })).toBeVisible();
+    // A question is the front of a card; opening it turns it over to the model answer.
+    await page.getByRole("region", { name: "Questions" }).locator("li button").first().click();
     await expect(page.getByText("Model answer", { exact: true }).first()).toBeVisible();
   });
 
@@ -145,7 +154,10 @@ test.describe("the demo flow", () => {
   test("stats draws the charts without any telemetry", async ({ page }) => {
     await page.goto("/stats");
     await expect(page.getByRole("heading", { name: "Stats" })).toBeVisible();
-    await expect(page.getByText(/due over the next 30 days/i)).toBeVisible();
+    await expect(page.getByRole("img", { name: /cards answered each day/i })).toBeVisible();
+    await expect(
+      page.getByRole("img", { name: /cards due on each of the next 14 days/i }),
+    ).toBeVisible();
   });
 
   test("settings saves a schedule change", async ({ page }) => {

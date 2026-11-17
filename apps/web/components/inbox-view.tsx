@@ -1,47 +1,28 @@
 "use client";
 // SPDX-License-Identifier: AGPL-3.0-only
-// The inbox (PRD 8.1 FR-LINK-8, 12.1 screen 4).
+// The inbox, as the phone app has it: a stack of clippings.
 //
-// Three things make this screen work rather than merely function:
-//   - on a wide screen the list has a reading pane beside it, so the summary and the
-//     actions for a link are one click away without leaving the list
-//   - every row leads with the site's own favicon and a content-type icon, so a video, a
-//     paper and a GitHub repo are told apart without reading
-//   - the tag list collapses after one row. Fourteen identical grey pills is a wall, and
-//     a wall is not a filter.
+// Each link is a row with its title in the display face, grouped by when it was saved.
+// The filters are words with an underline, not chips, and a row only names its state
+// when the filter does not already say it. The little glass beside each row drains as a
+// link is put off, so what is about to expire shows without reading.
+//
+// A wide screen adds what a mouse and the room allow: a reading pane beside the list, so
+// a pile can be gone through without a page load per link; Read and Drop on each row
+// when the pointer is over it, where the phone has swipes; and a checkbox for acting on
+// many links at once.
 
 import { useState } from "react";
+import { Check, ChevronDown, ExternalLink, Search, Trash2, Undo2 } from "lucide-react";
 import { Button as SdkButton } from "@ui-sdk/react/button";
 import { Checkbox, CheckboxIndicator } from "@ui-sdk/react/checkbox";
-import { Toolbar, ToolbarButton, ToolbarSeparator } from "@ui-sdk/react/toolbar";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "@ui-sdk/react/menu";
+import { Toolbar, ToolbarButton } from "@ui-sdk/react/toolbar";
 import { apiClient, ApiRequestError } from "../lib/client";
-import { hostOf, relativeDate, tagLabel } from "../lib/format";
-import {
-  Archive,
-  Check,
-  ExternalLink,
-  Hash,
-  Inbox,
-  Plus,
-  Trash2,
-  X,
-  contentTypeIcon,
-  contentTypeLabel,
-  SiteIcon,
-} from "../components/icons";
-import {
-  Button,
-  EmptyState,
-  Input,
-  LinkButton,
-  Notice,
-  Page,
-  PageHeader,
-  SectionLabel,
-  StatusPill,
-  Tag,
-  cx,
-} from "./ui";
+import { hostOf } from "../lib/format";
+import { hueFor, strong, type Hue } from "../lib/hue";
+import { LifeMark } from "./drawings";
+import { cx } from "./ui";
 
 interface InboxItem {
   id: string;
@@ -58,6 +39,7 @@ interface InboxItem {
   extractStatus: string;
   tags: string[];
   due: string | null;
+  lifeLeft?: number | null;
 }
 
 interface Counts {
@@ -69,19 +51,84 @@ interface Counts {
   expired: number;
 }
 
-const CHIPS: { status: keyof Counts; label: string }[] = [
+const MAIN_TABS: { status: string; label: string }[] = [
   { status: "unread", label: "Unread" },
-  { status: "snoozed", label: "Snoozed" },
+  { status: "snoozed", label: "Later" },
   { status: "expiring", label: "Last chance" },
+];
+
+const MORE_TABS: { status: string; label: string }[] = [
   { status: "read", label: "Read" },
   { status: "dropped", label: "Dropped" },
   { status: "expired", label: "Expired" },
+  { status: "all", label: "All links" },
 ];
 
-const TAGS_BEFORE_COLLAPSE = 8;
+const STATE_LABEL: Record<string, { label: string; hue: Hue | null }> = {
+  unread: { label: "Unread", hue: "blue" },
+  snoozed: { label: "Later", hue: "violet" },
+  read: { label: "Read", hue: "green" },
+  dropped: { label: "Dropped", hue: null },
+  expiring: { label: "Last chance", hue: "amber" },
+  expired: { label: "Expired", hue: "red" },
+};
 
-const TOOL =
-  "text-muted-foreground hover:bg-sunken hover:text-foreground inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors data-disabled:pointer-events-none data-disabled:opacity-45";
+const EMPTY: Record<string, { title: string; body: string }> = {
+  unread: {
+    title: "You are all caught up",
+    body: "Nothing is waiting to be read. Links you save next land here.",
+  },
+  snoozed: {
+    title: "Nothing set aside",
+    body: "Links you push to later wait here until their day comes.",
+  },
+  expiring: {
+    title: "Nothing about to expire",
+    body: "Links close to expiring show up here, so you get one last look.",
+  },
+  read: { title: "Nothing read yet", body: "Links you open or mark as read are kept here." },
+  dropped: {
+    title: "Nothing dropped",
+    body: "Links you drop are kept here, in case you want one back.",
+  },
+  expired: {
+    title: "Nothing has expired",
+    body: "Links you don't get to in time end up here, and you can bring any of them back.",
+  },
+  all: { title: "Nothing saved yet", body: "Links you save land here." },
+};
+
+type Action = "mark_read" | "drop" | "restore";
+
+/** "Today", "Yesterday", "This week", then the month, as the phone groups saved links. */
+function groupOf(iso: string, now: Date): string {
+  const saved = new Date(iso);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const days = Math.floor((startOfToday - saved.getTime()) / 86_400_000) + 1;
+  if (saved.getTime() >= startOfToday) return "Today";
+  if (days <= 1) return "Yesterday";
+  if (days < 7) return "This week";
+  const month = saved.toLocaleDateString("en-GB", { month: "long" });
+  return saved.getFullYear() === now.getFullYear() ? month : `${month} ${saved.getFullYear()}`;
+}
+
+function relativeDay(iso: string, now: Date): string {
+  const days = Math.round((now.getTime() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days} days ago`;
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+/** Two tags in their own colours; a second one that lands on the same hue moves on. */
+function tagHues(tags: string[]): Hue[] {
+  const order: Hue[] = ["orange", "blue", "violet", "green", "pink", "teal"];
+  const first = tags[0] ? hueFor(tags[0]) : "blue";
+  let second = tags[1] ? hueFor(tags[1]) : "blue";
+  if (tags[1] && second === first)
+    second = order[(order.indexOf(first) + 1) % order.length] ?? "blue";
+  return [first, second];
+}
 
 export function InboxView({
   initialItems,
@@ -96,7 +143,7 @@ export function InboxView({
   nextCursor: string | null;
   counts: Counts;
   tags: string[];
-  activeStatus: string | null;
+  activeStatus: string;
   activeTag: string | null;
   query: string;
 }) {
@@ -104,55 +151,67 @@ export function InboxView({
   const [cursor, setCursor] = useState(nextCursor);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState(query);
-  const [showAllTags, setShowAllTags] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; undo?: string[]; error?: boolean } | null>(
+    null,
+  );
   const [previewId, setPreviewId] = useState<string | null>(null);
-
+  const now = new Date();
   const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
-  const visibleTags = showAllTags ? tags : tags.slice(0, TAGS_BEFORE_COLLAPSE);
 
   function linkTo(next: Record<string, string | null>): string {
     const params = new URLSearchParams();
     const merged = { status: activeStatus, tag: activeTag, q: search || null, ...next };
-    for (const [key, value] of Object.entries(merged)) if (value) params.set(key, value);
+    for (const [key, value] of Object.entries(merged)) {
+      if (value && !(key === "status" && value === "unread")) params.set(key, value);
+    }
     const qs = params.toString();
     return qs ? `/inbox?${qs}` : "/inbox";
   }
 
-  function toggle(id: string): void {
-    setSelected((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  /** Read, drop or restore, then take the rows out of a filter they no longer fit. */
+  async function act(ids: string[], action: Action): Promise<void> {
+    if (ids.length === 0) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      await apiClient.post("/api/links/bulk", { ids, action });
+      const nextStatus = action === "drop" ? "dropped" : action === "restore" ? "unread" : "read";
+      const leaves = activeStatus !== "all" && activeStatus !== nextStatus;
+      const removed = new Set(ids);
+      setItems((current) =>
+        leaves
+          ? current.filter((item) => !removed.has(item.id))
+          : current.map((item) => (removed.has(item.id) ? { ...item, status: nextStatus } : item)),
+      );
+      setSelected(new Set());
+      if (action !== "restore") {
+        const what = ids.length === 1 ? "" : `${ids.length} links `;
+        setNotice({
+          text: action === "drop" ? `${what}Dropped.` : `${what}Marked as read.`,
+          undo: ids,
+        });
+      } else {
+        setNotice({ text: "Back in your queue." });
+      }
+    } catch (thrown) {
+      setNotice({
+        text:
+          thrown instanceof ApiRequestError ? thrown.message : "Something went wrong. Try again.",
+        error: true,
+      });
+    } finally {
+      setBusy(false);
+    }
   }
 
-  async function bulk(action: string): Promise<void> {
-    if (selected.size === 0) return;
+  async function undo(ids: string[]): Promise<void> {
     setBusy(true);
-    setError(null);
-
     try {
-      await apiClient.post("/api/links/bulk", { ids: [...selected], action });
-      const nextStatus =
-        action === "drop"
-          ? "dropped"
-          : action === "restore"
-            ? "unread"
-            : action === "mark_read"
-              ? "read"
-              : null;
-      if (nextStatus) {
-        setItems((current) =>
-          current.map((item) => (selected.has(item.id) ? { ...item, status: nextStatus } : item)),
-        );
-      }
-      setSelected(new Set());
-    } catch (thrown) {
-      setError(thrown instanceof ApiRequestError ? thrown.message : "That did not work.");
-    } finally {
+      await apiClient.post("/api/links/bulk", { ids, action: "restore" });
+      window.location.reload();
+    } catch {
+      setNotice({ text: "Could not undo that.", error: true });
       setBusy(false);
     }
   }
@@ -162,10 +221,9 @@ export function InboxView({
     setBusy(true);
     try {
       const params = new URLSearchParams({ cursor, limit: "50" });
-      if (activeStatus) params.set("status", activeStatus);
+      if (activeStatus !== "all") params.set("status", activeStatus);
       if (activeTag) params.set("tag", activeTag);
       if (search) params.set("q", search);
-
       const page = await apiClient.get<{ items: InboxItem[]; nextCursor: string | null }>(
         `/api/links?${params}`,
       );
@@ -177,190 +235,296 @@ export function InboxView({
   }
 
   const preview = items.find((item) => item.id === previewId) ?? items[0] ?? null;
+  const moreTab = MORE_TABS.find((tab) => tab.status === activeStatus);
 
-  /** One link, acted on from the reading pane. Same endpoint as the bulk bar. */
-  async function actOn(id: string, action: "mark_read" | "drop" | "restore"): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      await apiClient.post("/api/links/bulk", { ids: [id], action });
-      const nextStatus = action === "drop" ? "dropped" : action === "restore" ? "unread" : "read";
-      setItems((current) =>
-        current.map((item) => (item.id === id ? { ...item, status: nextStatus } : item)),
-      );
-    } catch (thrown) {
-      setError(thrown instanceof ApiRequestError ? thrown.message : "That did not work.");
-    } finally {
-      setBusy(false);
-    }
+  // Rows grouped under their day headings, in the order they came.
+  const groups: { label: string; items: InboxItem[] }[] = [];
+  for (const item of items) {
+    const label = groupOf(item.savedAt, now);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) last.items.push(item);
+    else groups.push({ label, items: [item] });
   }
 
-  return (
-    <Page>
-      <PageHeader
-        title="Inbox"
-        subtitle={`Every link you saved, and where each one stands. ${total} saved, ${counts.unread} unread.`}
-        action={
-          // The top bar already has Add on a phone, so a second one here is only clutter.
-          <span className="max-lg:hidden">
-            <LinkButton href="/add" tone="primary" icon={Plus}>
-              Add links
-            </LinkButton>
-          </span>
-        }
-      />
+  const empty = EMPTY[activeStatus] ?? EMPTY["unread"]!;
 
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <form action="/inbox" className="relative lg:w-80 lg:shrink-0">
-            {activeStatus ? <input type="hidden" name="status" value={activeStatus} /> : null}
+  return (
+    <main className="mx-auto w-full max-w-6xl pb-16 lg:px-8 lg:pt-4">
+      <div className="grid items-start gap-10 xl:grid-cols-[minmax(0,1fr)_minmax(24rem,0.8fr)]">
+        <div className="min-w-0">
+          <form action="/inbox" className="px-4 pb-0.5 pt-1 lg:px-0">
+            {activeStatus !== "unread" ? (
+              <input type="hidden" name="status" value={activeStatus} />
+            ) : null}
             {activeTag ? <input type="hidden" name="tag" value={activeTag} /> : null}
-            <Input
-              name="q"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search titles, summaries and notes"
-              aria-label="Search your links"
-              className="pr-20"
-            />
-            <Button
-              type="submit"
-              size="sm"
-              tone="ghost"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2"
-            >
-              Search
-            </Button>
+            <label className="inbox-search flex items-center rounded-full">
+              <span className="text-muted-foreground grid w-11 shrink-0 place-items-center">
+                <Search size={18} aria-hidden="true" />
+              </span>
+              <input
+                type="search"
+                name="q"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search your links"
+                aria-label="Search your links"
+                className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent py-3 pr-4 text-[15px] outline-none"
+              />
+            </label>
           </form>
 
-          <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5 max-sm:[scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
-            <Chip
-              href={linkTo({ status: null })}
-              active={!activeStatus}
-              label="All"
-              count={total}
-            />
-            {CHIPS.map((chip) => (
-              <Chip
-                key={chip.status}
-                href={linkTo({ status: chip.status })}
-                active={activeStatus === chip.status}
-                label={chip.label}
-                count={counts[chip.status]}
-              />
-            ))}
-          </div>
-        </div>
-
-        {tags.length > 0 ? (
-          // One row that scrolls sideways on a phone, where two or three wrapped rows of tags
-          // would push the links themselves off the first screen.
-          <div className="flex flex-wrap items-center gap-1.5 max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:[scrollbar-width:none]">
-            <Hash size={13} aria-hidden="true" className="text-subtle-foreground shrink-0" />
-            {visibleTags.map((tag) => (
-              <a
-                key={tag}
-                href={linkTo({ tag: activeTag === tag ? null : tag })}
-                className="shrink-0"
-              >
-                <span
-                  className={cx(
-                    "text-2xs inline-flex min-h-7 items-center rounded-md px-2 font-medium transition-colors",
-                    activeTag === tag
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-sunken text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {tagLabel(tag)}
-                </span>
-              </a>
-            ))}
-            {tags.length > TAGS_BEFORE_COLLAPSE ? (
-              <SdkButton
-                onClick={() => setShowAllTags((current) => !current)}
-                className="text-subtle-foreground hover:text-foreground text-2xs min-h-7 shrink-0 px-1.5 font-semibold"
-              >
-                {showAllTags ? "Show fewer" : `${tags.length - TAGS_BEFORE_COLLAPSE} more`}
-              </SdkButton>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      {error ? <Notice tone="error">{error}</Notice> : null}
-
-      {selected.size > 0 ? (
-        // One tab stop for the whole bar, with the arrow keys moving between its actions.
-        <Toolbar
-          aria-label="Actions for the selected links"
-          className="bg-surface border-border shadow-raised sticky top-16 z-20 flex flex-wrap items-center gap-1 rounded-xl border p-2"
-        >
-          <span className="px-1.5 text-sm font-semibold">{selected.size} selected</span>
-          <span className="ml-auto" />
-          <ToolbarButton className={TOOL} disabled={busy} onClick={() => bulk("mark_read")}>
-            <Check size={14} aria-hidden="true" />
-            Read
-          </ToolbarButton>
-          <ToolbarButton className={TOOL} disabled={busy} onClick={() => bulk("drop")}>
-            <Trash2 size={14} aria-hidden="true" />
-            Drop
-          </ToolbarButton>
-          <ToolbarButton className={TOOL} disabled={busy} onClick={() => bulk("restore")}>
-            <Archive size={14} aria-hidden="true" />
-            Restore
-          </ToolbarButton>
-          <ToolbarSeparator className="bg-border mx-1 h-5 w-px" />
-          <ToolbarButton className={TOOL} onClick={() => setSelected(new Set())}>
-            <X size={14} aria-hidden="true" />
-            Clear
-          </ToolbarButton>
-        </Toolbar>
-      ) : null}
-
-      {items.length === 0 ? (
-        <EmptyState
-          icon={Inbox}
-          title="Nothing here"
-          body={
-            search
-              ? "No links match that search. Try a shorter phrase."
-              : "Paste some links and they will show up here."
-          }
-          action={
-            <Button tone="primary" onClick={() => (window.location.href = "/add")}>
-              Add links
-            </Button>
-          }
-        />
-      ) : (
-        // The list, and beside it on a wide screen a reading pane for whichever link is
-        // picked, so going through a pile does not mean a page load per link.
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(24rem,0.85fr)]">
-          <div className="flex min-w-0 flex-col gap-3">
-            <ul className="bg-surface border-border shadow-card divide-border flex flex-col divide-y overflow-hidden rounded-xl border">
-              {items.map((item) => (
-                <InboxRow
-                  key={item.id}
-                  item={item}
-                  selected={selected.has(item.id)}
-                  previewed={preview?.id === item.id}
-                  onToggle={() => toggle(item.id)}
-                  onPreview={() => setPreviewId(item.id)}
+          <nav
+            aria-label="Filter your links"
+            className="border-border flex h-11 items-stretch border-b-[0.5px] px-3 lg:px-0"
+          >
+            <div className="flex min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]">
+              {MAIN_TABS.map((tab) => (
+                <FilterTab
+                  key={tab.status}
+                  href={linkTo({ status: tab.status })}
+                  selected={activeStatus === tab.status}
+                  label={tab.label}
+                  count={counts[tab.status as keyof Counts]}
                 />
               ))}
-            </ul>
+            </div>
+            <Menu>
+              <MenuTrigger
+                aria-label="More filters"
+                className={cx(
+                  "relative flex shrink-0 items-center gap-1 self-stretch px-2.5 text-[14.5px]",
+                  moreTab ? "text-foreground font-semibold" : "text-muted-foreground",
+                )}
+              >
+                {moreTab?.label ?? "More"}
+                <ChevronDown size={15} aria-hidden="true" />
+                {moreTab ? (
+                  <span className="bg-primary absolute inset-x-2.5 bottom-0 h-0.5 rounded-sm" />
+                ) : null}
+              </MenuTrigger>
+              <MenuContent align="end" sideOffset={4} className="later-menu min-w-44">
+                {MORE_TABS.map((tab) => (
+                  <MenuItem
+                    key={tab.status}
+                    onSelect={() => {
+                      window.location.href = linkTo({ status: tab.status });
+                    }}
+                  >
+                    <span className="flex-1">{tab.label}</span>
+                    <span className="text-muted-foreground text-xs tabular-nums">
+                      {tab.status === "all" ? total : counts[tab.status as keyof Counts]}
+                    </span>
+                    {activeStatus === tab.status ? (
+                      <Check size={16} aria-hidden="true" className="text-primary" />
+                    ) : null}
+                  </MenuItem>
+                ))}
+              </MenuContent>
+            </Menu>
+          </nav>
 
-            {cursor ? (
-              <Button disabled={busy} onClick={loadMore} fullWidth>
-                {busy ? "Loading" : "Load more"}
-              </Button>
-            ) : null}
-          </div>
+          {tags.length > 0 ? (
+            <div className="hidden flex-wrap items-center gap-x-3 gap-y-1 pt-3 text-[13px] lg:flex">
+              <span className="text-muted-foreground">Tags</span>
+              {tags.slice(0, 12).map((tag) => (
+                <a
+                  key={tag}
+                  href={linkTo({ tag: activeTag === tag ? null : tag })}
+                  className={cx(
+                    "font-semibold hover:underline",
+                    activeTag === tag &&
+                      "bg-primary text-primary-foreground rounded-full px-2 py-0.5 hover:no-underline",
+                  )}
+                  style={activeTag === tag ? undefined : { color: strong(hueFor(tag)) }}
+                >
+                  #{tag}
+                </a>
+              ))}
+            </div>
+          ) : null}
 
-          {preview ? <ReadingPane item={preview} busy={busy} onAct={actOn} /> : null}
+          {notice ? (
+            <div
+              role="status"
+              className={cx(
+                "inbox-notice mx-4 mt-3 flex items-center gap-2 rounded-[18px] py-1.5 pl-4 pr-1.5 text-sm font-medium lg:mx-0",
+                notice.error && "text-danger",
+              )}
+            >
+              <span className="flex-1">{notice.text}</span>
+              {notice.undo ? (
+                <SdkButton
+                  disabled={busy}
+                  onClick={() => void undo(notice.undo ?? [])}
+                  className="text-primary flex items-center gap-1.5 rounded-full px-3 py-1.5 font-semibold"
+                >
+                  <Undo2 size={15} aria-hidden="true" />
+                  Undo
+                </SdkButton>
+              ) : null}
+            </div>
+          ) : null}
+
+          {selected.size > 0 ? (
+            <Toolbar
+              aria-label="Actions for the selected links"
+              className="bg-surface border-border sticky top-16 z-20 mt-3 hidden items-center gap-1 rounded-full border py-1 pl-4 pr-1 lg:flex"
+            >
+              <span className="flex-1 text-sm font-semibold">{selected.size} selected</span>
+              <ToolbarButton
+                className="inbox-tool"
+                disabled={busy}
+                onClick={() => void act([...selected], "mark_read")}
+              >
+                <Check size={15} aria-hidden="true" />
+                Read
+              </ToolbarButton>
+              <ToolbarButton
+                className="inbox-tool"
+                disabled={busy}
+                onClick={() => void act([...selected], "drop")}
+              >
+                <Trash2 size={15} aria-hidden="true" />
+                Drop
+              </ToolbarButton>
+              <ToolbarButton
+                className="inbox-tool"
+                disabled={busy}
+                onClick={() => void act([...selected], "restore")}
+              >
+                <Undo2 size={15} aria-hidden="true" />
+                Back to unread
+              </ToolbarButton>
+              <ToolbarButton className="inbox-tool" onClick={() => setSelected(new Set())}>
+                Clear
+              </ToolbarButton>
+            </Toolbar>
+          ) : null}
+
+          {items.length === 0 ? (
+            <div className="px-[22px] pt-9 lg:px-0">
+              <p className="font-display text-[22px] font-[520] leading-[1.2] tracking-[-0.01em]">
+                {search ? `No links match "${search}"` : empty.title}
+              </p>
+              <p className="text-muted-foreground mt-2 max-w-md text-[15px] leading-[1.45]">
+                {search ? "Try other words, or look through all your links." : empty.body}
+              </p>
+              {search && activeStatus !== "all" ? (
+                <a
+                  href={`/inbox?status=all&q=${encodeURIComponent(search)}`}
+                  className="text-primary mt-3.5 inline-block text-[15px] font-semibold"
+                >
+                  Search all links
+                </a>
+              ) : activeStatus === "unread" && !search ? (
+                <a
+                  href="/add"
+                  className="text-primary mt-3.5 inline-block text-[15px] font-semibold"
+                >
+                  Save a link
+                </a>
+              ) : null}
+            </div>
+          ) : (
+            <div className="pt-1">
+              {groups.map((group, groupIndex) => (
+                <section key={`${group.label}-${groupIndex}`} aria-label={group.label}>
+                  <h2
+                    className={cx(
+                      "font-display px-[22px] pb-0.5 text-[17px] font-[640] tracking-[-0.006em] lg:px-0",
+                      groupIndex === 0 ? "pt-[18px]" : "pt-4",
+                    )}
+                  >
+                    {group.label}
+                  </h2>
+                  <ul>
+                    {group.items.map((item, index) => (
+                      <InboxRow
+                        key={item.id}
+                        item={item}
+                        first={index === 0}
+                        now={now}
+                        showDay={group.label !== "Today" && group.label !== "Yesterday"}
+                        activeStatus={activeStatus}
+                        selected={selected.has(item.id)}
+                        previewed={preview?.id === item.id}
+                        busy={busy}
+                        onToggle={() =>
+                          setSelected((current) => {
+                            const next = new Set(current);
+                            if (next.has(item.id)) next.delete(item.id);
+                            else next.add(item.id);
+                            return next;
+                          })
+                        }
+                        onPreview={() => setPreviewId(item.id)}
+                        onAct={(action) => void act([item.id], action)}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              ))}
+              {cursor ? (
+                <div className="px-[22px] pt-6 lg:px-0">
+                  <SdkButton
+                    disabled={busy}
+                    onClick={() => void loadMore()}
+                    className="quiet-pill w-full"
+                  >
+                    {busy ? "Loading" : "Show more"}
+                  </SdkButton>
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
+
+        {preview ? (
+          <ReadingPane
+            item={preview}
+            busy={busy}
+            onAct={(action) => void act([preview.id], action)}
+          />
+        ) : null}
+      </div>
+    </main>
+  );
+}
+
+function FilterTab({
+  href,
+  selected,
+  label,
+  count,
+}: {
+  href: string;
+  selected: boolean;
+  label: string;
+  count?: number;
+}) {
+  return (
+    <a
+      href={href}
+      aria-current={selected ? "page" : undefined}
+      className={cx(
+        "relative flex shrink-0 items-center gap-1.5 px-2.5 text-[14.5px] transition-colors",
+        selected ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground",
       )}
-    </Page>
+    >
+      {label}
+      {count ? (
+        <span className="text-subtle-foreground hidden text-xs font-normal tabular-nums lg:inline">
+          {count}
+        </span>
+      ) : null}
+      <span
+        aria-hidden="true"
+        className={cx(
+          "absolute inset-x-2.5 bottom-0 h-0.5 rounded-sm",
+          selected ? "bg-primary" : "bg-transparent",
+        )}
+      />
+    </a>
   );
 }
 
@@ -371,99 +535,164 @@ function paneIsVisible(): boolean {
 
 function InboxRow({
   item,
+  first,
+  now,
+  showDay,
+  activeStatus,
   selected,
   previewed,
+  busy,
   onToggle,
   onPreview,
+  onAct,
 }: {
   item: InboxItem;
+  first: boolean;
+  now: Date;
+  showDay: boolean;
+  activeStatus: string;
   selected: boolean;
   previewed: boolean;
+  busy: boolean;
   onToggle: () => void;
   onPreview: () => void;
+  onAct: (action: Action) => void;
 }) {
-  const TypeIcon = contentTypeIcon(item.contentType);
+  const state = STATE_LABEL[item.status];
+  const showState = item.status !== activeStatus && item.status !== "unread" && state;
+  const [firstHue = "blue", secondHue = "blue"] = tagHues(item.tags);
+  const processing = item.aiStatus === "pending" || item.extractStatus === "pending";
 
   return (
     <li
       className={cx(
-        "group relative p-4 transition-colors max-sm:px-3.5",
-        selected ? "bg-primary-soft/50" : previewed ? "xl:bg-sunken" : "hover:bg-sunken/60",
+        "group relative flex gap-3 px-[22px] pb-[17px] pt-4 transition-colors lg:-mx-3 lg:rounded-2xl lg:px-3",
+        item.status === "expiring" && "border-l-[3px] pl-[19px] lg:pl-3",
+        selected
+          ? "lg:bg-primary-soft/60"
+          : previewed
+            ? "xl:bg-[color-mix(in_srgb,var(--color-quiet)_80%,transparent)]"
+            : "lg:hover:bg-[color-mix(in_srgb,var(--color-quiet)_55%,transparent)]",
       )}
+      style={item.status === "expiring" ? { borderLeftColor: strong("amber") } : undefined}
     >
-      {previewed ? (
+      {first ? null : (
         <span
           aria-hidden="true"
-          className="bg-primary absolute inset-y-0 left-0 hidden w-0.5 xl:block"
+          className="border-border absolute left-16 right-[22px] top-0 border-t-[0.5px] lg:left-[54px] lg:right-3"
         />
-      ) : null}
-      <div className="flex gap-3">
+      )}
+
+      <span className="relative mt-0.5 shrink-0">
+        <span className={cx("lg:group-hover:invisible", selected && "lg:invisible")}>
+          <LifeMark url={item.url} siteName={item.siteName} lifeLeft={item.lifeLeft ?? null} />
+        </span>
         <Checkbox
           checked={selected}
           onCheckedChange={onToggle}
           aria-label={`Select ${item.title ?? item.url}`}
-          className="mt-0.5 shrink-0"
+          className={cx(
+            "inbox-check absolute inset-0 m-auto hidden lg:grid",
+            selected ? "visible" : "invisible group-hover:visible",
+          )}
         >
           <CheckboxIndicator>
-            <Check size={13} aria-hidden="true" />
+            <Check size={14} aria-hidden="true" />
           </CheckboxIndicator>
         </Checkbox>
+      </span>
 
-        {/* The favicon gives way on a phone: the title needs the width more. */}
-        <span className="max-sm:hidden">
-          <SiteIcon url={item.url} siteName={item.siteName} size={32} />
-        </span>
-
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div className="flex items-start justify-between gap-2">
-            <a
-              href={`/links/${item.id}`}
-              // With the reading pane showing, a click opens the link there. Without it,
-              // and for a modified click, this stays an ordinary link to the full page.
-              onClick={(event) => {
-                if (event.metaKey || event.ctrlKey || event.shiftKey || !paneIsVisible()) return;
-                event.preventDefault();
-                onPreview();
-              }}
-              aria-current={previewed ? "true" : undefined}
-              // Two lines on a phone rather than one cut short: half a title is not enough
-              // to recognise a link by.
-              className="decoration-border text-sm font-semibold hover:underline hover:underline-offset-2 max-sm:line-clamp-2 sm:truncate"
-            >
-              {item.title ?? item.url}
-            </a>
-            <StatusPill status={item.status} />
-          </div>
-
-          <div className="text-subtle-foreground flex items-center gap-1.5 text-xs">
-            <span className="truncate">{item.siteName ?? hostOf(item.url)}</span>
-            <span aria-hidden="true">&middot;</span>
-            <TypeIcon size={11} aria-hidden="true" className="shrink-0" />
-            <span className="shrink-0">{contentTypeLabel(item.contentType)}</span>
-            {item.readMinutes ? (
+      <div className="flex min-w-0 flex-1 flex-col">
+        <p className="text-muted-foreground flex items-center text-[12.5px] leading-[1.35]">
+          <span className="truncate">
+            {item.siteName ?? hostOf(item.url)}
+            {item.readMinutes ? ` · ${item.readMinutes} min` : ""}
+            {showDay ? ` · ${relativeDay(item.savedAt, now)}` : ""}
+            {showState ? (
               <>
-                <span aria-hidden="true">&middot;</span>
-                <span className="shrink-0">{item.readMinutes} min</span>
+                {" · "}
+                <span
+                  className="font-medium"
+                  style={{ color: state.hue ? strong(state.hue) : undefined }}
+                >
+                  {state.label.toLowerCase()}
+                </span>
               </>
             ) : null}
-            <span aria-hidden="true">&middot;</span>
-            <span className="shrink-0">{relativeDate(item.savedAt)}</span>
-          </div>
-
-          {item.aiStatus === "pending" ? (
-            <p className="text-subtle-foreground text-xs italic">Writing the summary</p>
-          ) : item.summaryLines ? (
-            <p className="text-muted-foreground clamp-2 text-sm">{item.summaryLines[0]}</p>
+          </span>
+          {processing ? (
+            <span className="ml-2 flex shrink-0 items-center gap-1.5">
+              <span className="border-muted-foreground size-2.5 animate-spin rounded-full border-[1.4px] border-t-transparent" />
+              Summarising
+            </span>
           ) : null}
+        </p>
+        <a
+          href={`/links/${item.id}`}
+          onClick={(event) => {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || !paneIsVisible()) return;
+            event.preventDefault();
+            onPreview();
+          }}
+          aria-current={previewed ? "true" : undefined}
+          className="font-display mt-[5px] line-clamp-2 text-[19.5px] font-[540] leading-[1.22] tracking-[-0.008em] after:absolute after:inset-0 after:content-['']"
+        >
+          {item.title ?? item.url}
+        </a>
+        {item.summaryLines ? (
+          <p className="text-muted-foreground mt-[5px] line-clamp-2 text-sm leading-[1.4]">
+            {item.summaryLines[0]}
+          </p>
+        ) : null}
+        {item.tags.length > 0 ? (
+          <p className="mt-2 flex gap-3 text-[12.5px] font-semibold">
+            {item.tags.slice(0, 2).map((tag, index) => (
+              <span key={tag} style={{ color: strong(index === 0 ? firstHue : secondHue) }}>
+                #{tag}
+              </span>
+            ))}
+            {item.tags.length > 2 ? (
+              <span className="text-subtle-foreground">+{item.tags.length - 2}</span>
+            ) : null}
+          </p>
+        ) : null}
+      </div>
 
-          {item.tags.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {item.tags.slice(0, 5).map((tag) => (
-                <Tag key={tag}>{tagLabel(tag)}</Tag>
-              ))}
-            </div>
-          ) : null}
-        </div>
+      {/* Where the phone has swipes, a wide screen has these, on the row under the pointer. */}
+      <div className="relative z-10 hidden shrink-0 items-start gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 lg:flex">
+        {["unread", "snoozed", "expiring"].includes(item.status) ? (
+          <SdkButton
+            disabled={busy}
+            aria-label="Mark as read"
+            title="Mark as read"
+            onClick={() => onAct("mark_read")}
+            className="row-tool"
+          >
+            <Check size={17} aria-hidden="true" />
+          </SdkButton>
+        ) : null}
+        {item.status === "dropped" || item.status === "expired" || item.status === "read" ? (
+          <SdkButton
+            disabled={busy}
+            aria-label="Back to unread"
+            title="Back to unread"
+            onClick={() => onAct("restore")}
+            className="row-tool"
+          >
+            <Undo2 size={17} aria-hidden="true" />
+          </SdkButton>
+        ) : null}
+        {item.status !== "dropped" && item.status !== "expired" ? (
+          <SdkButton
+            disabled={busy}
+            aria-label="Drop it"
+            title="Drop it"
+            onClick={() => onAct("drop")}
+            className="row-tool"
+          >
+            <Trash2 size={17} aria-hidden="true" />
+          </SdkButton>
+        ) : null}
       </div>
     </li>
   );
@@ -476,137 +705,117 @@ function ReadingPane({
 }: {
   item: InboxItem;
   busy: boolean;
-  onAct: (id: string, action: "mark_read" | "drop" | "restore") => Promise<void>;
+  onAct: (action: Action) => void;
 }) {
   const active = ["unread", "snoozed", "expiring"].includes(item.status);
+  const state = STATE_LABEL[item.status];
+  const summary = item.summaryLines
+    ?.map((line) => (/[.!?]$/.test(line.trim()) ? line.trim() : `${line.trim()}.`))
+    .join(" ");
 
   return (
     <section
       aria-label="Selected link"
-      className="bg-surface border-border shadow-card sticky top-20 hidden max-h-[calc(100dvh-6.5rem)] flex-col gap-4 overflow-y-auto rounded-xl border p-6 xl:flex"
+      className="bg-surface border-border sticky top-20 mt-4 hidden max-h-[calc(100dvh-6.5rem)] flex-col overflow-y-auto rounded-[22px] border p-7 xl:flex"
     >
-      <div className="text-subtle-foreground flex flex-wrap items-center gap-2 text-xs">
-        <StatusPill status={item.status} />
-        <span>{item.siteName ?? hostOf(item.url)}</span>
-        <span aria-hidden="true">&middot;</span>
-        <span>{relativeDate(item.savedAt)}</span>
-        {item.readMinutes ? (
+      <p className="text-muted-foreground text-[13px] leading-[1.4]">
+        {item.siteName ?? hostOf(item.url)}
+        {item.readMinutes ? ` · ${item.readMinutes} min read` : ""}
+        {item.status !== "unread" && state ? (
           <>
-            <span aria-hidden="true">&middot;</span>
-            <span>{item.readMinutes} min read</span>
+            {" · "}
+            <span
+              className="font-medium"
+              style={{ color: state.hue ? strong(state.hue) : undefined }}
+            >
+              {state.label.toLowerCase()}
+            </span>
           </>
         ) : null}
-      </div>
+      </p>
+      <h2 className="font-display mt-3 text-[29px] font-[560] leading-[1.14] tracking-[-0.014em]">
+        {item.title ?? item.url}
+      </h2>
 
-      <h2 className="text-xl font-bold leading-snug">{item.title ?? item.url}</h2>
-
-      {item.tags.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
-          {item.tags.map((tag) => (
-            <Tag key={tag}>{tagLabel(tag)}</Tag>
-          ))}
-        </div>
+      {summary ? (
+        <>
+          <hr className="border-border my-5 border-t-[0.5px]" />
+          <p className="text-[17px] leading-[1.55]">{summary}</p>
+        </>
+      ) : item.aiStatus === "pending" ? (
+        <p className="text-muted-foreground mt-4 text-sm">
+          Still reading and summarising this one.
+        </p>
       ) : null}
-
-      <div className="flex flex-col gap-1.5">
-        <SectionLabel>Summary</SectionLabel>
-        {item.aiStatus === "pending" ? (
-          <p className="text-muted-foreground text-sm italic">The summary is being written.</p>
-        ) : item.summaryLines ? (
-          <ul className="text-muted-foreground flex list-disc flex-col gap-1 pl-4 text-sm leading-relaxed">
-            {item.summaryLines.map((line, index) => (
-              <li key={index}>{line}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-muted-foreground text-sm italic">No summary for this one.</p>
-        )}
-      </div>
 
       {item.whySaved ? (
-        <div className="flex flex-col gap-1.5">
-          <SectionLabel>Why you probably saved this</SectionLabel>
-          <p className="text-muted-foreground text-sm leading-relaxed">{item.whySaved}</p>
+        <div className="mt-[22px] flex gap-3.5">
+          <span
+            aria-hidden="true"
+            className="w-0.5 shrink-0 rounded-sm"
+            style={{ background: strong("amber") }}
+          />
+          <div className="flex flex-col gap-[3px]">
+            <span className="text-[12.5px] font-semibold" style={{ color: strong("amber") }}>
+              Why you probably saved it
+            </span>
+            <span className="text-[14.5px] leading-[1.45]">{item.whySaved}</span>
+          </div>
         </div>
       ) : null}
 
-      <div className="border-border mt-1 flex flex-wrap items-center gap-2 border-t pt-4">
-        {active ? (
-          <>
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer nofollow"
-              onClick={() => void onAct(item.id, "mark_read")}
-              className="bg-primary text-primary-foreground hover:bg-primary-hover shadow-card inline-flex min-h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold"
-            >
-              <ExternalLink size={15} aria-hidden="true" />
-              Read it now
-            </a>
-            <Button icon={Check} disabled={busy} onClick={() => void onAct(item.id, "mark_read")}>
-              Mark as read
-            </Button>
-            <Button
-              tone="ghost"
-              icon={Trash2}
-              disabled={busy}
-              onClick={() => void onAct(item.id, "drop")}
-            >
-              Drop it
-            </Button>
-          </>
-        ) : (
-          <>
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer nofollow"
-              className="border-border bg-surface hover:border-border-strong shadow-card inline-flex min-h-11 items-center gap-2 rounded-lg border px-4 text-sm font-semibold"
-            >
-              <ExternalLink size={15} aria-hidden="true" />
-              Open the original
-            </a>
-            <Button icon={Archive} disabled={busy} onClick={() => void onAct(item.id, "restore")}>
-              Put it back in the queue
-            </Button>
-          </>
-        )}
+      <div className="mt-7 flex items-center gap-2">
         <a
-          href={`/links/${item.id}`}
-          className="text-primary ml-auto text-sm font-semibold hover:underline"
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer nofollow"
+          onClick={() => {
+            if (active) onAct("mark_read");
+          }}
+          className="session-primary flex-1"
         >
-          Notes and reader view
+          <ExternalLink size={17} aria-hidden="true" />
+          {item.readMinutes ? `Read it · ${item.readMinutes} min` : "Read it"}
         </a>
+        {active ? (
+          <SdkButton
+            disabled={busy}
+            aria-label="Mark as read"
+            title="Mark as read"
+            onClick={() => onAct("mark_read")}
+            className="round-tool"
+          >
+            <Check size={19} aria-hidden="true" />
+          </SdkButton>
+        ) : (
+          <SdkButton
+            disabled={busy}
+            aria-label="Back to unread"
+            title="Back to unread"
+            onClick={() => onAct("restore")}
+            className="round-tool"
+          >
+            <Undo2 size={19} aria-hidden="true" />
+          </SdkButton>
+        )}
+        {item.status !== "dropped" && item.status !== "expired" ? (
+          <SdkButton
+            disabled={busy}
+            aria-label="Drop it"
+            title="Drop it"
+            onClick={() => onAct("drop")}
+            className="round-tool"
+          >
+            <Trash2 size={19} aria-hidden="true" />
+          </SdkButton>
+        ) : null}
       </div>
+      <a
+        href={`/links/${item.id}`}
+        className="text-primary mt-4 text-sm font-semibold hover:underline"
+      >
+        Note, tags and reader view
+      </a>
     </section>
-  );
-}
-
-function Chip({
-  href,
-  active,
-  label,
-  count,
-}: {
-  href: string;
-  active: boolean;
-  label: string;
-  count?: number;
-}) {
-  return (
-    <a
-      href={href}
-      className={cx(
-        "text-2xs inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 font-semibold transition-colors",
-        active
-          ? "bg-foreground text-canvas"
-          : "bg-sunken text-muted-foreground hover:text-foreground",
-      )}
-    >
-      {label}
-      {count !== undefined ? (
-        <span className={cx("tabular-nums", active ? "opacity-60" : "opacity-50")}>{count}</span>
-      ) : null}
-    </a>
   );
 }

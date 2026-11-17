@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// New deck (PRD 12.1 screens 8 and 9).
+// New deck. ?topics= starts the box with text, as Home's paste box does for text that is
+// not a link. See components/new-deck-form.tsx.
 
 import { redirect } from "next/navigation";
 import { pageState } from "../../../lib/server";
@@ -17,5 +18,5 @@ export default async function NewDeckPage({
   if (state.state === "needs_login") redirect("/login");
 
   const params = await searchParams;
-  return <NewDeckForm mode={params["from"] === "resume" ? "resume" : "topics"} />;
+  return <NewDeckForm initialText={params["topics"] ?? ""} />;
 }

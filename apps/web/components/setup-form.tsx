@@ -49,7 +49,7 @@ export function SetupForm() {
   return (
     <AuthLayout>
       <header className="flex flex-col gap-2 text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Welcome to Aeyhey</h1>
+        <h1 className="font-display text-[30px] font-[640] leading-[1.1]">Welcome to Aeyhey</h1>
         <p className="text-muted-foreground text-sm">
           One password and you are in. Everything else can wait.
         </p>

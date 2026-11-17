@@ -10,7 +10,32 @@ import {
   parseMode,
   parseTheme,
 } from "../lib/theme";
+import localFont from "next/font/local";
 import "./globals.css";
+
+/*
+ * The two faces the phone app uses, so the website reads the same. Sarabun is the text
+ * face; Signika, a variable font, is for what people saved and the headings around it.
+ * Both are SIL Open Font License, subset to Latin; each folder in app/fonts keeps its licence.
+ */
+const sarabun = localFont({
+  src: [
+    { path: "./fonts/sarabun/Sarabun-Regular.woff2", weight: "400" },
+    { path: "./fonts/sarabun/Sarabun-Medium.woff2", weight: "500" },
+    { path: "./fonts/sarabun/Sarabun-SemiBold.woff2", weight: "600" },
+    { path: "./fonts/sarabun/Sarabun-Bold.woff2", weight: "700" },
+    { path: "./fonts/sarabun/Sarabun-ExtraBold.woff2", weight: "800" },
+  ],
+  variable: "--font-sarabun",
+  display: "swap",
+});
+
+const signika = localFont({
+  src: "./fonts/signika/Signika-Variable.woff2",
+  weight: "300 700",
+  variable: "--font-signika",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Aeyhey",
@@ -42,7 +67,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   );
 
   return (
-    <html lang="en" suppressHydrationWarning {...appearance}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      {...appearance}
+      className={`${sarabun.variable} ${signika.variable}`}
+    >
       <body className="min-h-dvh antialiased">
         <AppShell>{children}</AppShell>
         <CommandPalette />

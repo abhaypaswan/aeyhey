@@ -1,14 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Decks (PRD 12.1 screen 7).
+// Decks, as the phone app has them.
+//
+// Each deck is drawn as a small stack of cards in its own colour, thicker with more
+// questions, its top card filled as far as it is learned. Rows are grouped by what needs
+// you, under quiet headings, and a new deck starts from an empty dashed card at the top.
+// A wide screen lays each group out in two columns, so a dozen decks still fit on one
+// screen.
 
 import { redirect } from "next/navigation";
+import { Plus } from "lucide-react";
 import { repos } from "@aeyhey/core";
 import { pageState } from "../../lib/server";
-import { Bar, Button, Page, PageHeader } from "../../components/ui";
+import { DashedCard, DeckStack } from "../../components/drawings";
+import { LinkButton, cx } from "../../components/ui";
 import { pluralize } from "../../lib/format";
-import { Brain, ChevronRight, FileText, Sparkles } from "../../components/icons";
 
 export const dynamic = "force-dynamic";
+
+const SOURCE: Record<string, string> = {
+  resume: "From your resume",
+  document: "From a document",
+  manual: "Written by you",
+};
 
 export default async function DecksPage() {
   const state = await pageState();
@@ -20,137 +33,121 @@ export default async function DecksPage() {
     (deck) => deck.kind !== "links",
   );
 
-  const due = decks
-    .filter((deck) => !deck.pausedAt)
-    .reduce((sum, deck) => sum + deck.counts.due, 0);
+  if (decks.length === 0) {
+    return (
+      <main className="mx-auto w-full max-w-6xl px-[22px] pb-20 pt-7 sm:px-6 lg:px-8 lg:pt-14">
+        <div className="max-w-xl">
+          <DashedCard color="var(--color-primary)" width={60} height={80}>
+            <Plus size={26} aria-hidden="true" />
+          </DashedCard>
+          <h1 className="font-display mt-6 text-[25px] font-[560] leading-[1.18] lg:text-[34px]">
+            Make your first deck
+          </h1>
+          <p className="text-muted-foreground mt-2.5 text-[15px] leading-[1.45] lg:text-base">
+            Type what you want to learn, or upload a book, your notes or a chapter. Aeyhey writes
+            questions with model answers, and new ones arrive before each reminder.
+          </p>
+          <div className="mt-[22px]">
+            <LinkButton href="/decks/new" tone="primary" size="lg" icon={Plus} className="home-cta">
+              New deck
+            </LinkButton>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const groups = [
+    {
+      label: "Due now",
+      decks: decks
+        .filter((deck) => !deck.pausedAt && deck.counts.due > 0)
+        .sort((a, b) => b.counts.due - a.counts.due),
+    },
+    {
+      label: "Up to date",
+      decks: decks.filter(
+        (deck) => !deck.pausedAt && deck.counts.due === 0 && deck.counts.total > 0,
+      ),
+    },
+    { label: "Paused", decks: decks.filter((deck) => deck.pausedAt && deck.counts.total > 0) },
+    { label: "Still empty", decks: decks.filter((deck) => deck.counts.total === 0) },
+  ].filter((group) => group.decks.length > 0);
 
   return (
-    <Page>
-      <PageHeader
-        title="Decks"
-        subtitle="Sets of questions Aeyhey asks you over time. Answer in your own words, get a score, and see what you missed."
-        eyebrow={`${pluralize(decks.length, "deck")}${due > 0 ? `, ${due} due now` : ""}`}
-      />
+    <main className="mx-auto w-full max-w-6xl px-[22px] pb-20 pt-2 sm:px-6 lg:px-8 lg:pt-8">
+      <a
+        href="/decks/new"
+        className="group -mx-2 flex items-center gap-3.5 rounded-[10px] px-2 py-3 transition-colors lg:max-w-md lg:hover:bg-[color-mix(in_srgb,var(--color-quiet)_60%,transparent)]"
+      >
+        <span className="grid h-12 w-10 shrink-0 place-items-center">
+          <DashedCard color="var(--color-primary)">
+            <Plus size={16} aria-hidden="true" />
+          </DashedCard>
+        </span>
+        <span className="flex flex-col gap-0.5">
+          <span className="font-display text-primary text-lg font-semibold">New deck</span>
+          <span className="text-muted-foreground text-[13px]">
+            From topics, a document or your resume
+          </span>
+        </span>
+      </a>
 
-      {/* On a phone the single column is told it may shrink. Left to size itself it grows
-          to fit the longest deck name and pushes the page sideways. */}
-      <div className="grid gap-4 max-sm:grid-cols-[minmax(0,1fr)] sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        {/* The two ways to make a deck are forms, not links, and each says what it does:
-            someone new should not have to press one to find out. */}
-        <NewDeckCard
-          from="topics"
-          icon={Sparkles}
-          title="New deck from topics"
-          body="Type a few topics, such as Postgres indexing or system design. Aeyhey writes the questions and a worked answer for each."
-          action="Start with topics"
-          primary
-        />
-        <NewDeckCard
-          from="resume"
-          icon={FileText}
-          title="New deck from your resume"
-          body="Paste or upload your resume and name the role you want. Get the interview questions you are likely to be asked."
-          action="Use my resume"
-        />
-
-        {decks.map((deck) => {
-          const learned =
-            deck.counts.total === 0 ? 0 : (deck.counts.learned / deck.counts.total) * 100;
-
-          return (
-            <a
-              key={deck.id}
-              href={`/decks/${deck.id}`}
-              className="bg-surface border-border shadow-card lift flex flex-col gap-4 rounded-xl border p-5"
-            >
-              <span className="flex items-center gap-3">
-                <span className="bg-primary-soft text-primary grid size-10 shrink-0 place-items-center rounded-xl">
-                  {deck.kind === "resume" ? (
-                    <FileText size={18} aria-hidden="true" />
-                  ) : (
-                    <Brain size={18} aria-hidden="true" />
-                  )}
-                </span>
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate font-bold">{deck.name}</span>
-                  <span className="text-subtle-foreground text-xs">
-                    {deck.kind === "resume" ? "From your resume" : "From topics"}
-                  </span>
-                </span>
-                {deck.pausedAt ? (
-                  <span className="bg-sunken text-muted-foreground text-2xs shrink-0 rounded-full px-2 py-0.5 font-bold">
-                    Paused
-                  </span>
-                ) : deck.counts.due > 0 ? (
-                  <span className="bg-primary-soft text-primary text-2xs shrink-0 rounded-full px-2 py-0.5 font-bold">
-                    {deck.counts.due} due
-                  </span>
-                ) : null}
-              </span>
-
-              <Bar value={learned} tone="success" label={`Questions learned in ${deck.name}`} />
-
-              <span className="text-muted-foreground flex flex-wrap gap-x-5 gap-y-1 text-xs">
-                <DeckCount value={deck.counts.total} label="questions" />
-                <DeckCount value={deck.counts.learned} label="learned" />
-                <DeckCount value={deck.counts.new} label="new" />
-                {deck.counts.suspended > 0 ? (
-                  <DeckCount value={deck.counts.suspended} label="suspended" />
-                ) : null}
-              </span>
-
-              <span className="text-primary mt-auto inline-flex items-center gap-1 text-sm font-semibold">
-                Open deck
-                <ChevronRight size={15} aria-hidden="true" />
-              </span>
-            </a>
-          );
-        })}
-      </div>
-    </Page>
-  );
-}
-
-function DeckCount({ value, label }: { value: number; label: string }) {
-  return (
-    <span className="flex flex-col">
-      <span className="text-foreground text-base font-bold tabular-nums">{value}</span>
-      {label}
-    </span>
-  );
-}
-
-function NewDeckCard({
-  from,
-  icon: IconComponent,
-  title,
-  body,
-  action,
-  primary,
-}: {
-  from: "topics" | "resume";
-  icon: typeof Brain;
-  title: string;
-  body: string;
-  action: string;
-  primary?: boolean;
-}) {
-  return (
-    <form
-      action="/decks/new"
-      className="border-border-strong flex flex-col gap-3 rounded-xl border border-dashed p-5 max-sm:gap-2 max-sm:p-4"
-    >
-      <input type="hidden" name="from" value={from} />
-      <span className="bg-sunken text-muted-foreground grid size-10 place-items-center rounded-xl max-sm:hidden">
-        <IconComponent size={18} aria-hidden="true" />
-      </span>
-      <h2 className="font-bold">{title}</h2>
-      <p className="text-muted-foreground text-sm">{body}</p>
-      <div className="mt-auto pt-1">
-        <Button tone={primary ? "primary" : "secondary"} type="submit" className="max-sm:w-full">
-          {action}
-        </Button>
-      </div>
-    </form>
+      {groups.map((group) => (
+        <section key={group.label} aria-label={group.label}>
+          <h2 className="font-display pb-0.5 pt-[26px] text-[17px] font-[640] tracking-[-0.006em] lg:pt-9 lg:text-xl">
+            {group.label}
+          </h2>
+          <ul className="grid lg:grid-cols-2 lg:gap-x-12">
+            {group.decks.map((deck, index) => {
+              const source = SOURCE[deck.kind] ?? "From topics";
+              const meta =
+                deck.counts.total === 0
+                  ? `${source} · no questions yet`
+                  : `${source} · ${pluralize(deck.counts.total, "question")}${
+                      deck.counts.learned > 0 ? `, ${deck.counts.learned} learned` : ""
+                    }`;
+              return (
+                <li key={deck.id} className="relative">
+                  {/* The hairline sits above every row but the first in its column. */}
+                  <span
+                    aria-hidden="true"
+                    className={cx(
+                      "border-border absolute left-[54px] right-0 top-0 border-t-[0.5px]",
+                      index === 0 && "hidden",
+                      index === 1 && "lg:hidden",
+                    )}
+                  />
+                  <a
+                    href={`/decks/${deck.id}`}
+                    className="-mx-2 flex items-center gap-3.5 rounded-[10px] px-2 py-3.5 transition-colors lg:hover:bg-[color-mix(in_srgb,var(--color-quiet)_60%,transparent)]"
+                  >
+                    <DeckStack
+                      id={deck.id}
+                      kind={deck.kind}
+                      total={deck.counts.total}
+                      learned={deck.counts.learned}
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                      <span className="font-display line-clamp-2 text-lg font-[580] leading-[1.2]">
+                        {deck.name}
+                      </span>
+                      <span className="text-muted-foreground truncate text-[13px]">{meta}</span>
+                    </span>
+                    {deck.pausedAt ? (
+                      <span className="text-muted-foreground ml-2.5 shrink-0 text-sm">Paused</span>
+                    ) : deck.counts.due > 0 ? (
+                      <span className="text-primary ml-2.5 shrink-0 text-sm font-semibold">
+                        {deck.counts.due} due
+                      </span>
+                    ) : null}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+    </main>
   );
 }

@@ -24,8 +24,11 @@ export function ConfirmButton({
   cancelLabel = "Keep it",
   onConfirm,
   disabled,
+  triggerClassName,
 }: {
-  label: string;
+  label: ReactNode;
+  /** Replaces the trigger's quiet text-button look. */
+  triggerClassName?: string;
   title: string;
   description: ReactNode;
   confirmLabel: string;
@@ -37,7 +40,10 @@ export function ConfirmButton({
     <AlertDialog>
       <AlertDialogTrigger
         disabled={disabled}
-        className="text-muted-foreground hover:text-danger min-h-9 shrink-0 rounded-lg px-2 text-xs font-semibold disabled:opacity-50"
+        className={
+          triggerClassName ??
+          "text-muted-foreground hover:text-danger min-h-9 shrink-0 rounded-lg px-2 text-xs font-semibold disabled:opacity-50"
+        }
       >
         {label}
       </AlertDialogTrigger>
@@ -46,14 +52,12 @@ export function ConfirmButton({
         <AlertDialogTitle>{title}</AlertDialogTitle>
         <AlertDialogDescription>{description}</AlertDialogDescription>
         <div className="mt-1 flex justify-end gap-2">
-          <AlertDialogClose className="bg-sunken text-foreground hover:bg-raised min-h-10 rounded-lg px-3.5 text-sm font-semibold">
-            {cancelLabel}
-          </AlertDialogClose>
+          <AlertDialogClose className="quiet-pill">{cancelLabel}</AlertDialogClose>
           <AlertDialogClose
             value="confirm"
             onClick={onConfirm}
             data-agent-confirm={title}
-            className="bg-danger min-h-10 rounded-lg px-3.5 text-sm font-semibold text-white"
+            className="bg-danger min-h-[2.375rem] rounded-full px-4 text-sm font-semibold text-white"
           >
             {confirmLabel}
           </AlertDialogClose>
