@@ -201,11 +201,11 @@ export function PasswordBox({
     >
       <PasswordInputControl
         {...control}
-        className="h-full min-w-0 flex-1 bg-transparent px-3.5 text-sm outline-none"
+        className="h-full min-w-0 flex-1 bg-transparent px-4 text-[15px] outline-none"
       />
       <PasswordInputToggle
         aria-label="Show what you typed"
-        className="text-subtle-foreground hover:bg-sunken hover:text-foreground grid size-9 shrink-0 cursor-pointer place-items-center rounded-md"
+        className="text-subtle-foreground hover:bg-quiet hover:text-foreground grid size-9 shrink-0 cursor-pointer place-items-center rounded-full"
       >
         {(state) =>
           state.visible ? (

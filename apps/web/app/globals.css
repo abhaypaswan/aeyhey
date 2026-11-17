@@ -1055,12 +1055,13 @@
 /*
  * The frame around a control that is more than one element: the number field with its
  * step buttons, the password field with its show button. It is the same box as a plain
- * input, and takes the accent border while anything inside it has focus.
+ * input (filled, rounded, outlined in light mode only, as on the phone), and takes the
+ * accent border while anything inside it has focus.
  */
 .aeyhey-control {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  border: 1px solid light-dark(var(--color-border), transparent);
+  border-radius: 1rem;
+  background: var(--color-sunken);
   transition: border-color 150ms ease;
 }
 
