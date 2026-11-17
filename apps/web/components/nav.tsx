@@ -10,6 +10,7 @@
 
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { Coins, UserRound } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@ui-sdk/react/avatar";
 import { Button } from "@ui-sdk/react/button";
 import { HowItWorks } from "./how-it-works";
@@ -40,7 +41,12 @@ export interface ShellData {
   name: string | null;
   /** Where the person's picture is, or null with none. */
   avatarUrl: string | null;
+  /** Links a plugin adds to the "You" group, such as a hosted edition's Credits page. */
+  extraNav?: { href: string; label: string; icon?: string }[];
 }
+
+/** Icons a plugin may name for its links. Anything else gets the settings cog. */
+const PLUGIN_ICONS: Record<string, LucideIcon> = { coins: Coins, user: UserRound };
 
 interface NavItem {
   href: string;
@@ -78,6 +84,12 @@ export function ShellFrame({ children, data }: { children: ReactNode; data: Shel
         { href: "/stats", label: "Stats", icon: TrendingUp },
         { href: "/journal", label: "Journal", icon: NotebookPen, wideOnly: true },
         { href: "/your-page", label: "Your page", icon: BookOpen, wideOnly: true },
+        ...(data.extraNav ?? []).map((item) => ({
+          href: item.href,
+          label: item.label,
+          icon: PLUGIN_ICONS[item.icon ?? ""] ?? Settings,
+          wideOnly: true,
+        })),
         { href: "/settings", label: "Settings", icon: Settings },
       ],
     },

@@ -8,7 +8,7 @@
 
 import type { ReactNode } from "react";
 import { repos, scheduler } from "@aeyhey/core";
-import { pageState } from "../lib/server";
+import { pageState, pluginNav } from "../lib/server";
 import { ShellFrame } from "./nav";
 
 export async function AppShell({ children }: { children: ReactNode }) {
@@ -40,6 +40,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
         rhythm: `${cadenceLabel}, ${settings.cardsPerSession} cards a session`,
         name: user.displayName === "You" ? null : user.displayName,
         avatarUrl: await repos.ownAvatarUrl(scope.handle, user.id),
+        extraNav: await pluginNav(),
       }}
     >
       {children}

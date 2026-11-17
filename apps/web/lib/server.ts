@@ -48,3 +48,13 @@ export const pageState = cache(async (): Promise<PageState> => {
 export async function flags(): Promise<extensions.FeatureFlags> {
   return (await getRuntime()).registry.config.flags;
 }
+
+/** Links plugins add to the sidebar. Empty in the community build. */
+export async function pluginNav(): Promise<{ href: string; label: string; icon?: string }[]> {
+  const { registry } = await getRuntime();
+  return registry.nav.map((item) => ({
+    href: item.href,
+    label: item.label,
+    ...(item.icon ? { icon: item.icon } : {}),
+  }));
+}
