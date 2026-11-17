@@ -8,6 +8,12 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request): Promise<Response> {
   const { handle, registry, env } = await getRuntime();
 
+  // A multi-user instance has no owner to set up: people sign up through the auth
+  // provider instead. Left open, this would let anyone create a local owner account.
+  if (registry.config.flags.multiUser) {
+    return coreApi.fail(404, "not_found", "There is no first-run setup here. Sign up instead.");
+  }
+
   // There is exactly one owner. Once they exist this endpoint is closed, so it cannot be
   // used to add a second account to a single-user instance.
   if (await extensions.ownerExists(handle)) {

@@ -7,12 +7,17 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request): Promise<Response> {
   const { handle, registry } = await getRuntime();
   const user = await registry.auth.getUser(req);
-  const hasOwner = await extensions.ownerExists(handle);
+  const multiUser = registry.config.flags.multiUser;
+  const hasOwner = multiUser || (await extensions.ownerExists(handle));
 
   // Whether the owner set an email at all. The login form uses this to stop asking for a
   // username that does not exist: on a single-user instance the email is optional, and an
   // empty box that looks required is the first thing a new self-hoster gets stuck on.
-  const ownerHasEmail = hasOwner ? await extensions.ownerHasEmail(handle) : false;
+  const ownerHasEmail = multiUser
+    ? true
+    : hasOwner
+      ? await extensions.ownerHasEmail(handle)
+      : false;
 
   return coreApi.json({
     // With where their picture is, so the apps can show it from this one call.

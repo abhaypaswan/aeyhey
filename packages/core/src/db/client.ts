@@ -67,11 +67,47 @@ async function openSqlite(url: string): Promise<DbHandle> {
   };
 }
 
-async function openPostgres(url: string): Promise<DbHandle> {
+export interface PostgresConnection {
+  url: string;
+  options: { max: number; idle_timeout: number; connect_timeout: number; prepare: boolean };
+}
+
+/**
+ * How to connect to a Postgres URL.
+ *
+ * A transaction-mode pooler (PgBouncer, Supabase's pooler on port 6543) hands each
+ * statement to whichever server connection is free, so prepared statements break. Such a
+ * URL is recognized by its port or by `pgbouncer=true`, which is stripped because Postgres
+ * itself would reject it as an unknown setting. DATABASE_POOL_MAX caps connections per
+ * process, which matters where many short-lived processes share one database.
+ */
+export function postgresConnection(
+  databaseUrl: string,
+  source: NodeJS.ProcessEnv = process.env,
+): PostgresConnection {
+  const parsed = new URL(databaseUrl);
+  const flagged = parsed.searchParams.get("pgbouncer") === "true";
+  parsed.searchParams.delete("pgbouncer");
+  const pooled = flagged || parsed.port === "6543";
+
+  const max = Number.parseInt(source.DATABASE_POOL_MAX ?? "", 10);
+  return {
+    url: parsed.toString(),
+    options: {
+      max: Number.isFinite(max) && max > 0 ? max : 10,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      prepare: !pooled,
+    },
+  };
+}
+
+async function openPostgres(databaseUrl: string): Promise<DbHandle> {
   const { default: postgres } = await import("postgres");
   const { drizzle } = await import("drizzle-orm/postgres-js");
 
-  const sql = postgres(url, { max: 10, idle_timeout: 20, connect_timeout: 10 });
+  const { url, options } = postgresConnection(databaseUrl);
+  const sql = postgres(url, options);
   const db = drizzle(sql, { schema: pgSchema }) as unknown as Database;
   log.info("opened postgres");
 

@@ -33,7 +33,11 @@ export type PageState =
 export const pageState = cache(async (): Promise<PageState> => {
   const { handle, registry } = await getRuntime();
 
-  if (!(await extensions.ownerExists(handle))) return { state: "needs_setup" };
+  // First-run setup creates the single owner. A multi-user instance has sign-up instead,
+  // so it never sends anyone there.
+  if (!registry.config.flags.multiUser && !(await extensions.ownerExists(handle))) {
+    return { state: "needs_setup" };
+  }
 
   const user = await registry.auth.getUser(await requestFromHeaders());
   if (!user) return { state: "needs_login" };
