@@ -1,0 +1,19 @@
+# gitleaks config for Aeyhey. Extends the default rule set and allows our placeholders.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented placeholders, examples and fixtures"
+paths = [
+  '''\.env\.example$''',
+  '''^docs/''',
+  '''^packages/core/tests/fixtures/''',
+  '''^README\.md$''',
+  '''^CONTRIBUTING\.md$''',
+]
+regexes = [
+  '''sk-your-key-here''',
+  '''sk-ant-your-key-here''',
+  '''PLACEHOLDER''',
+  '''changeme''',
+]

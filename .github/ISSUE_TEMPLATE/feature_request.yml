@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest something Aeyhey should do
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the README's non-goals first. Aeyhey stays small on purpose:
+        it is not a read-later reader, not a bookmark manager, and not a mock interview tool.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that is hard or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have in mind
+      description: Your suggested solution. Rough is fine.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you tried instead

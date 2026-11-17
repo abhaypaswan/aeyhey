@@ -1,0 +1,1 @@
+ALTER TABLE "public_profiles" ADD COLUMN "show_stats" boolean DEFAULT true NOT NULL;

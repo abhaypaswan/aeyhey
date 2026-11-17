@@ -1,0 +1,1 @@
+ALTER TABLE `decks` ADD `paused_at` integer;

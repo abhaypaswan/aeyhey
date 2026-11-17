@@ -1,0 +1,1 @@
+ALTER TABLE `question_sources` ADD `scope` text;

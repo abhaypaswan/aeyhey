@@ -1,0 +1,31 @@
+# Postgres instead of SQLite. Use this if you already run Postgres or want more than one worker.
+#   docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aeyhey
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aeyhey}
+      POSTGRES_DB: aeyhey
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aeyhey -d aeyhey"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    environment:
+      DATABASE_URL: postgres://aeyhey:${POSTGRES_PASSWORD:-aeyhey}@postgres:5432/aeyhey
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    environment:
+      DATABASE_URL: postgres://aeyhey:${POSTGRES_PASSWORD:-aeyhey}@postgres:5432/aeyhey
+    depends_on:
+      postgres:
+        condition: service_healthy

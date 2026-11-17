@@ -1,0 +1,24 @@
+# Demo mode: seed data and the mock AI provider. No API key, no volume, no login.
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml up
+#
+# AUTH_MODE=none is here on purpose. The seeded demo owner has no password, so without it
+# the demo would show a login screen nobody can get past. This is a throwaway instance
+# full of fake data, so there is nothing to protect. Never use AUTH_MODE=none for real data.
+services:
+  web:
+    environment:
+      DEMO_MODE: "true"
+      AI_PROVIDER: mock
+      AUTH_MODE: none
+      DATABASE_URL: file:/tmp/aeyhey-demo/aeyhey.db
+      DATA_DIR: /tmp/aeyhey-demo
+    volumes: []
+
+  worker:
+    environment:
+      DEMO_MODE: "true"
+      AI_PROVIDER: mock
+      AUTH_MODE: none
+      DATABASE_URL: file:/tmp/aeyhey-demo/aeyhey.db
+      DATA_DIR: /tmp/aeyhey-demo
+    volumes: []

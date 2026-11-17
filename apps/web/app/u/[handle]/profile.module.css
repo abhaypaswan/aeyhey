@@ -1,0 +1,1785 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/*
+ * The public reading profile: calm, card-based, built for a phone first.
+ *
+ * White cards with hairline borders on a light grey ground, the device's own system face,
+ * and Aeyhey indigo only where it carries meaning (the avatar, the activity grid, the main
+ * button). One dark card, the streak, is the page's one loud thing. Colours follow the
+ * visitor's light or dark setting through light-dark().
+ */
+
+.page {
+  --ground: light-dark(#fafafa, #09090b);
+  --card: light-dark(#ffffff, #141417);
+  --border: light-dark(#ececf0, #26262b);
+  --chip: light-dark(#f4f4f6, #1f1f24);
+  --ink: light-dark(#0a0a0f, #f4f4f5);
+  --body: light-dark(#3f3f46, #d4d4d8);
+  --muted: light-dark(#71717a, #a1a1aa);
+  --faint: light-dark(#a1a1aa, #71717a);
+  --indigo: #5b50e6;
+  --indigo-hover: light-dark(#4338ca, #7c73ff);
+  --heat-0: light-dark(#f1f1f4, #1f1f24);
+  --heat-1: light-dark(#c7c3f9, #3b3480);
+  --heat-2: light-dark(#8b82f2, #5b50e6);
+  --heat-3: light-dark(#5b50e6, #9d96ff);
+  --good: light-dark(#16a34a, #4ade80);
+  /* The day feed: indigo for what was learned from reading, green for work done, amber
+     for work still going, violet for lessons from building. Each with a soft wash. */
+  --learn: light-dark(#4f46e5, #a5a0ff);
+  --learn-soft: light-dark(#eef0ff, #1e1d3a);
+  --done: light-dark(#15803d, #4ade80);
+  --done-soft: light-dark(#e9f9ef, #11261a);
+  --going: light-dark(#b45309, #fbbf24);
+  --going-soft: light-dark(#fff6e5, #2a2112);
+  --lesson: light-dark(#7c3aed, #c4b5fd);
+  --lesson-soft: light-dark(#f4efff, #241c3a);
+  --streak: light-dark(#c2410c, #fb923c);
+  --streak-soft: light-dark(#fff4ea, #241810);
+  --streak-bar: light-dark(#fdc9a3, #5a3418);
+  --removed: light-dark(#dc2626, #f87171);
+  /* Building with coding agents: teal, so it never reads as the green of growth. */
+  --build: light-dark(#0f766e, #5eead4);
+  --build-soft: light-dark(#e6f7f5, #0f2a28);
+  --sky: light-dark(#0369a1, #7dd3fc);
+  --sky-soft: light-dark(#e8f5fd, #10222e);
+  --rose: light-dark(#be123c, #fda4af);
+  --rose-soft: light-dark(#fdecef, #2a1218);
+  --strong-bg: light-dark(#0a0a0f, #f4f4f5);
+  --strong-ink: light-dark(#ffffff, #0a0a0f);
+  --strong-muted: light-dark(#a1a1aa, #52525b);
+  --strong-bar: light-dark(#3f3f46, #a1a1aa);
+
+  min-height: 100dvh;
+  background: var(--ground);
+  color: var(--ink);
+  font-family:
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.layout {
+  /* With the smaller type, the page reads best with room on both sides: about 130px
+     each side on a 13 inch laptop, more on a big screen. */
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 960px) {
+  .layout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: clamp(28px, 3vw, 48px);
+    padding: 48px clamp(24px, 4vw, 64px) 64px;
+  }
+}
+
+/* ------------------------------------------------------------------ the person */
+
+.profile {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 4px;
+}
+
+@media (min-width: 960px) {
+  /* Stays in view beside the long feed instead of leaving an empty column. It scrolls
+     on its own when it is taller than the window, with the scrollbar hidden. A little
+     padding keeps focus rings from being clipped. */
+  .profile {
+    flex: 0 0 clamp(300px, 24vw, 360px);
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    scrollbar-width: none;
+    gap: 18px;
+    padding: 4px;
+    margin: -4px;
+  }
+}
+
+.profileTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #6d63f0, #4338ca);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 22.5px;
+  box-shadow:
+    0 0 0 4px var(--card),
+    0 0 0 5px var(--border);
+  overflow: hidden;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (min-width: 960px) {
+  .avatar {
+    width: 96px;
+    height: 96px;
+    font-size: 32.5px;
+  }
+}
+
+.name {
+  margin: 0;
+  font-weight: 600;
+  font-size: 19px;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+@media (min-width: 960px) {
+  .name {
+    font-size: 21px;
+  }
+}
+
+.handleLine {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.bio {
+  margin: 0;
+  color: var(--body);
+  font-size: 14px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.button,
+.buttonDark {
+  height: 38px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 500;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.button {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--ink);
+}
+
+.button:hover {
+  border-color: var(--faint);
+}
+
+.buttonDark {
+  border: 0;
+  background: var(--strong-bg);
+  color: var(--strong-ink);
+}
+
+.buttonDark:hover {
+  opacity: 0.88;
+}
+
+.button:focus-visible,
+.buttonDark:focus-visible,
+.cta:focus-visible,
+.itemTitle a:focus-visible {
+  outline: 2px solid var(--indigo);
+  outline-offset: 2px;
+}
+
+/* On a wide screen the buttons move under the bio; on a phone they sit beside the avatar. */
+.buttonsNarrow {
+  display: flex;
+}
+.buttonsWide {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .buttonsNarrow {
+    display: none;
+  }
+  .buttonsWide {
+    display: flex;
+  }
+  .buttonsWide .buttonDark {
+    flex: 1;
+  }
+}
+
+.facts {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .facts {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    color: var(--body);
+    font-size: 13px;
+  }
+}
+
+.fact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fact svg {
+  color: var(--faint);
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------------ the content column */
+
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 720px) {
+  .tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+@media (min-width: 720px) {
+  .card {
+    padding: 20px;
+  }
+}
+
+.streak {
+  grid-column: span 2;
+  background: var(--strong-bg);
+  color: var(--strong-ink);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.streakLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--strong-muted);
+  font-size: 12px;
+}
+
+.streakValue {
+  display: block;
+  margin: 6px 0;
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.streakNote {
+  color: var(--strong-muted);
+  font-size: 12px;
+}
+
+.week {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 64px;
+  flex-shrink: 0;
+}
+
+.weekBar {
+  display: block;
+  width: 9px;
+  border-radius: 3px;
+  background: var(--strong-bar);
+}
+
+.weekBarToday {
+  background: #fb923c;
+}
+
+.weekBarEmpty {
+  opacity: 0.35;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tileLabel {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.tileValue {
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 720px) {
+  .tileValue {
+    font-size: 24px;
+  }
+}
+
+.tileDelta {
+  color: var(--good);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.tileDeltaQuiet {
+  color: var(--faint);
+  font-size: 11.5px;
+}
+
+/* ------------------------------------------------------------------ activity */
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.sectionNote {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, auto);
+  gap: 3px;
+}
+
+@media (max-width: 719px) {
+  .onlyWide {
+    display: none !important;
+  }
+}
+
+@media (min-width: 720px) {
+  .onlyNarrow {
+    display: none !important;
+  }
+}
+
+.cell {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 3px;
+}
+
+.heat0 {
+  background: var(--heat-0);
+}
+.heat1 {
+  background: var(--heat-1);
+}
+.heat2 {
+  background: var(--heat-2);
+}
+.heat3 {
+  background: var(--heat-3);
+}
+
+.gridFoot {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.legend .cell {
+  width: 9px;
+}
+
+/* ------------------------------------------------------------------ topics and milestones */
+
+.pair {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 720px) {
+  .pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: var(--chip);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--body);
+}
+
+.chip span {
+  color: var(--faint);
+  font-weight: 400;
+}
+
+.milestones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.milestone {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.milestone:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 11.5px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.badge_streak {
+  background: light-dark(#fff1e7, #3a2414);
+  color: light-dark(#ea580c, #fb923c);
+}
+.badge_links {
+  background: light-dark(#eeedfd, #23214a);
+  color: light-dark(#5b50e6, #a39dff);
+}
+.badge_takeaways {
+  background: light-dark(#e8f7ee, #13301f);
+  color: light-dark(#16a34a, #4ade80);
+}
+.badge_hours {
+  background: light-dark(#fdf4e3, #33280f);
+  color: light-dark(#b45309, #fbbf24);
+}
+.badge_days {
+  background: light-dark(#e8f2fd, #142640);
+  color: light-dark(#2563eb, #60a5fa);
+}
+
+.milestoneText {
+  display: flex;
+  flex-direction: column;
+}
+
+.milestoneLabel {
+  font-weight: 500;
+  font-size: 13.5px;
+}
+
+.milestoneWhen {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* ------------------------------------------------------------------ takeaways */
+
+.takeawaysHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 4px 0;
+}
+
+.takeawaysTitle {
+  margin: 0;
+  font-weight: 600;
+  font-size: 15.5px;
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 720px) {
+  .takeawaysTitle {
+    font-size: 16.5px;
+  }
+}
+
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+@media (min-width: 720px) {
+  .items {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.itemMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.itemMeta time {
+  margin-left: auto;
+  color: var(--faint);
+  font-size: 11.5px;
+}
+
+.siteMark {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--chip);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--body);
+  flex-shrink: 0;
+}
+
+.itemTitle {
+  margin: 0;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.itemTitle a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.itemTitle a:hover {
+  color: var(--indigo-hover);
+}
+
+.takeaway {
+  margin: 0;
+  color: var(--body);
+  font-size: 14px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.empty {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.paging {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px;
+  font-size: 13px;
+}
+
+.paging a {
+  color: var(--indigo-hover);
+  text-decoration: none;
+}
+
+.paging a:hover {
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------------ footer */
+
+.footer {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (min-width: 720px) {
+  .footer {
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    padding: 18px 4px 0;
+    border-top: 1px solid var(--border);
+  }
+}
+
+.cta {
+  height: 44px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--indigo);
+  color: #fff;
+  font-weight: 500;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.cta:hover {
+  background: #4338ca;
+}
+
+@media (min-width: 720px) {
+  .cta {
+    width: auto;
+    height: 40px;
+    padding: 0 16px;
+    font-size: 13px;
+  }
+}
+
+.madeWith {
+  color: var(--faint);
+  font-size: 11.5px;
+}
+
+/* ------------------------------------------------------------------ the work side */
+
+.headline {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--body);
+}
+
+.links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.links a {
+  height: 32px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.links a:hover {
+  border-color: var(--faint);
+}
+
+.links a:focus-visible {
+  outline: 2px solid var(--indigo);
+  outline-offset: 2px;
+}
+
+.links svg {
+  color: var(--muted);
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.job {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.job:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.jobMark {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--chip);
+  color: var(--body);
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.jobText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.jobHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+}
+
+.jobRole {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.jobWhen {
+  color: var(--faint);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.jobCompany {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.jobSummary {
+  margin: 6px 0 0;
+  color: var(--body);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.projectsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.techList {
+  list-style: none;
+  margin: auto 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.techList li {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--chip);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.printOnly {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ print: a one-pager */
+
+.profile::-webkit-scrollbar {
+  display: none;
+}
+
+@media print {
+  .profile {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .page {
+    --ground: #fff;
+    --card: #fff;
+    --border: #e4e4e7;
+    --ink: #0a0a0f;
+    --body: #27272a;
+    --muted: #52525b;
+    --faint: #71717a;
+    --chip: #f4f4f5;
+    --strong-bg: #fff;
+    --strong-ink: #0a0a0f;
+    --strong-muted: #52525b;
+    --strong-bar: #a1a1aa;
+    min-height: 0;
+    font-size: 12px;
+    color-scheme: light;
+  }
+
+  .layout {
+    display: block;
+    padding: 0;
+    max-width: none;
+  }
+
+  .profile {
+    padding: 0 0 12px;
+    gap: 8px;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+    box-shadow: none;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .facts {
+    display: none;
+  }
+
+  .noPrint {
+    display: none !important;
+  }
+
+  .printOnly {
+    display: inline;
+    color: var(--muted);
+  }
+
+  .card,
+  .streak,
+  .item,
+  .job {
+    break-inside: avoid;
+  }
+
+  .streak {
+    border: 1px solid var(--border);
+  }
+
+  .cell,
+  .weekBar,
+  .badge,
+  .chip {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* One page is the point: who they are, the numbers, the grid, work and skills.
+     The daily feed and milestones stay on the web page. */
+  @page {
+    margin: 12mm;
+  }
+
+  .content,
+  .workBlock,
+  .statsBlock,
+  .pair {
+    gap: 8px;
+  }
+
+  .card {
+    padding: 12px 14px;
+    box-shadow: none;
+  }
+
+  .pairStats {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------------ wide screens */
+
+.workBlock,
+.statsBlock,
+.takeawaysBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Reading and its activity first on every screen, then work, then the takeaways. */
+.statsBlock {
+  order: 1;
+}
+.workBlock {
+  order: 2;
+}
+.takeawaysBlock {
+  order: 3;
+}
+.footer {
+  order: 4;
+}
+
+/* Below the wide layout these sit in the content column instead. */
+.sideCards {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .hideWide {
+    display: none !important;
+  }
+
+  /* Beside the side column there is room for three: the streak and one tile, then three. */
+  .tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* Milestones moved to the side, so topics take the full width. */
+  .pairStats {
+    grid-template-columns: 1fr;
+  }
+
+  .sideCards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .sideCards .card {
+    padding: 16px;
+  }
+}
+
+@media print {
+  .sideCards {
+    display: none;
+  }
+}
+
+/* Building with coding agents (PRD 29.3). */
+.buildFacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 14px;
+}
+
+.buildFacts dt {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.buildFacts dd {
+  margin: 2px 0 0;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.buildList {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.buildList li {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.buildDay {
+  color: var(--muted);
+  font-size: 11.5px;
+  padding-top: 2px;
+}
+
+/* At a glance: one card with the streak on a warm panel, then Reading and, when shown,
+   Building as two labelled rows of numbers. Stacks on a phone. */
+.overview {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 720px) {
+  .overview {
+    grid-template-columns: minmax(200px, 0.8fr) minmax(0, 2fr);
+    gap: 20px;
+    align-items: stretch;
+  }
+}
+
+.streakPanel {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  padding: 16px;
+  background: var(--streak-soft);
+  color: var(--ink);
+}
+
+.streakPanel .streakLabel {
+  color: var(--streak);
+  font-weight: 600;
+}
+
+.streakPanel .streakValue {
+  margin: 10px 0 4px;
+  font-size: 34px;
+}
+
+.streakUnit {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+.streakPanel .streakNote {
+  color: var(--muted);
+}
+
+.streakPanel .week {
+  margin-top: auto;
+  padding-top: 16px;
+  height: auto;
+  min-height: 40px;
+  gap: 5px;
+}
+
+.streakPanel .weekBar {
+  flex: 1;
+  width: auto;
+  max-width: 22px;
+  background: var(--streak-bar);
+}
+
+.streakPanel .weekBarToday {
+  background: var(--streak);
+}
+
+.overviewGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.statGroup + .statGroup {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.statGroupTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--tone);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.statGroupDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.statRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.stat dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.stat dd {
+  margin: 0;
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.statDelta {
+  color: var(--good);
+  font-size: 11.5px;
+}
+
+.statQuiet {
+  color: var(--faint);
+  font-size: 11.5px;
+}
+
+.linesAdded {
+  color: var(--good);
+}
+
+.linesRemoved {
+  color: var(--removed);
+}
+
+.statChips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.statChips li {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--tone-soft);
+  color: var(--tone);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.statChips li span {
+  opacity: 0.7;
+}
+
+/* What I learned: a timeline, one card per day. A date column and a rail on wide
+   screens; on a phone the card's own header carries the date. */
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.feedRow {
+  position: relative;
+}
+
+.feedDate,
+.feedDot {
+  display: none;
+}
+
+@media (min-width: 720px) {
+  .feedRow {
+    display: grid;
+    grid-template-columns: 52px 18px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  /* The rail runs down between the date and the card, and joins the next day. */
+  .feedRow::before {
+    content: "";
+    position: absolute;
+    left: 60px;
+    top: 26px;
+    bottom: -14px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .feedRow:last-child::before {
+    bottom: 0;
+  }
+
+  .feedDate {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-top: 14px;
+    line-height: 1.1;
+  }
+
+  .feedDay {
+    font-size: 22px;
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+  }
+
+  .feedMonth {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--learn);
+    text-transform: none;
+  }
+
+  .feedWeekday {
+    font-size: 11px;
+    color: var(--faint);
+  }
+
+  .feedDot {
+    display: block;
+    position: relative;
+    z-index: 1;
+    justify-self: center;
+    margin-top: 20px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--learn);
+    box-shadow: 0 0 0 4px var(--ground);
+  }
+}
+
+.dayCard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dayHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dayTitle {
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.daySummary {
+  color: var(--faint);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.dayOne {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.daySplit {
+  display: grid;
+  gap: 18px;
+}
+
+@media (min-width: 960px) {
+  .daySplit {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  .daySplit > section + section {
+    border-left: 1px solid var(--border);
+    padding-left: 24px;
+  }
+}
+
+/* Each section takes its colour from one variable, so the label, icon and dots match. */
+.toneLearn {
+  --tone: var(--learn);
+  --tone-soft: var(--learn-soft);
+}
+
+.toneBuild {
+  --tone: var(--build);
+  --tone-soft: var(--build-soft);
+}
+
+.toneDone {
+  --tone: var(--done);
+  --tone-soft: var(--done-soft);
+}
+
+.toneGoing {
+  --tone: var(--going);
+  --tone-soft: var(--going-soft);
+}
+
+.toneLesson {
+  --tone: var(--lesson);
+  --tone-soft: var(--lesson-soft);
+}
+
+.toneSky {
+  --tone: var(--sky);
+  --tone-soft: var(--sky-soft);
+}
+
+.toneRose {
+  --tone: var(--rose);
+  --tone-soft: var(--rose-soft);
+}
+
+/* A section heading with a small tinted icon, in the section's colour. */
+.titleIcon {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--tone-soft);
+  color: var(--tone);
+}
+
+.titled {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+/* Chips inside a coloured section take its colour; a count stays a little quieter. */
+.tinted .chip,
+.tinted .techList li {
+  background: var(--tone-soft);
+  color: var(--tone);
+}
+
+.tinted .chip span {
+  color: var(--tone);
+  opacity: 0.65;
+}
+
+/* Each company's badge and each project card gets its own colour from the palette. */
+.tinted .jobMark {
+  background: var(--tone-soft);
+  color: var(--tone);
+  font-weight: 700;
+}
+
+.jobPresent {
+  color: var(--good);
+  font-weight: 600;
+}
+
+.projectCard {
+  box-shadow: inset 0 3px 0 var(--tone);
+}
+
+.projectCard .itemTitle a:hover {
+  color: var(--tone);
+}
+
+.dayLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--tone);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.dayLabelIcon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--tone-soft);
+  color: var(--tone);
+}
+
+.notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.noteItem {
+  display: grid;
+  grid-template-columns: 6px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.noteDot {
+  margin-top: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.note {
+  margin: 0;
+  color: var(--body);
+  font-size: 14px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.noteSource {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin-top: 6px;
+  padding: 3px 8px 3px 3px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.noteSource:hover {
+  color: var(--ink);
+}
+
+.noteSite {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--tone-soft);
+  color: var(--tone);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.noteTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noteHost {
+  flex-shrink: 0;
+  color: var(--faint);
+}
+
+.standup + .standup {
+  margin-top: 16px;
+}
+
+.standupLabel {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--tone-soft);
+  color: var(--tone);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* Contribution grid, one block per month (LeetCode and GitHub style), with a gap
+   between months. Each month's share of the width matches its number of week columns
+   (set inline), and the squares fill it, so the grid fits the card at any width. */
+.months {
+  display: grid;
+  column-gap: 8px;
+}
+
+/* On a phone three months would make big squares, so the grid keeps a narrower width. */
+.gridNarrow.months {
+  max-width: 300px;
+}
+
+.month {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.monthGrid {
+  display: grid;
+  grid-template-rows: repeat(7, auto);
+  gap: 3px;
+}
+
+.monthGrid .cell {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 2px;
+}
+
+.monthLabel {
+  color: var(--muted);
+  font-size: 11.5px;
+  text-align: center;
+}
+
+/* "Show 7 more days" under the feed. */
+.feedMore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 11px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.feedMore:hover {
+  border-style: solid;
+  background: var(--card);
+}
+
+.feedMore span {
+  color: var(--faint);
+  font-weight: 500;
+}
+
+@media print {
+  .feedMore {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ save as PDF */
+
+/* Paper gets a one-page summary, not the web page: the wide two-column layout (who they
+   are, skills and milestones on the side; numbers, activity and work in the main column),
+   scaled a little and tightened. The daily feed is left out in the markup. Kept last so
+   it wins over the screen rules above. */
+@media print {
+  .page {
+    zoom: 0.78;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .sideCards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .hideWide {
+    display: none !important;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .bio {
+    margin: 0;
+  }
+
+  .links {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .links a {
+    max-width: 100%;
+    height: auto;
+    min-height: 28px;
+    padding: 4px 10px;
+    flex-wrap: wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .overview {
+    grid-template-columns: minmax(160px, 0.7fr) minmax(0, 2fr);
+    gap: 14px;
+  }
+
+  .streakPanel {
+    padding: 12px;
+  }
+
+  .streakPanel .week {
+    display: none;
+  }
+
+  .overviewGroups {
+    gap: 10px;
+  }
+
+  .statGroup + .statGroup {
+    padding-top: 10px;
+  }
+
+  .stat dd {
+    font-size: 18px;
+  }
+
+  .months {
+    max-width: 640px;
+  }
+
+  .chip {
+    height: 22px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .job {
+    padding: 8px 0;
+  }
+
+  .jobMark {
+    width: 28px;
+    height: 28px;
+  }
+
+  .projectsSection {
+    gap: 8px;
+  }
+}
