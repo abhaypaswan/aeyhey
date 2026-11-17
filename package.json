@@ -1,6 +1,6 @@
 {
   "name": "aeyhey-workspace",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "license": "AGPL-3.0-only",
   "description": "Aeyhey: spaced repetition for your saved links and your interview prep.",

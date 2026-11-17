@@ -20,6 +20,7 @@ import { Progress, ProgressIndicator, ProgressTrack } from "@ui-sdk/react/progre
 import { Textarea as SdkTextarea } from "@ui-sdk/react/textarea";
 import { ChevronLeft } from "lucide-react";
 import type { LucideIcon } from "./icons";
+import { LinkButtonRoot } from "./link-button-root";
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
@@ -508,13 +509,9 @@ export function LinkButton({
   const iconSize = size === "lg" ? 18 : size === "sm" ? 14 : 16;
 
   return (
-    <SdkButton
-      render={
-        <a
-          href={href}
-          {...(external ? { target: "_blank", rel: "noopener noreferrer nofollow" } : {})}
-        />
-      }
+    <LinkButtonRoot
+      href={href}
+      {...(external ? { external: true } : {})}
       className={cx(
         "inline-flex items-center justify-center font-semibold transition-all duration-150",
         TONES[tone],
@@ -525,7 +522,7 @@ export function LinkButton({
     >
       {IconLeft ? <IconLeft size={iconSize} aria-hidden="true" className="shrink-0" /> : null}
       {children}
-    </SdkButton>
+    </LinkButtonRoot>
   );
 }
 

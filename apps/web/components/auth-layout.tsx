@@ -10,7 +10,16 @@ import type { ReactNode } from "react";
 import { HOW_IT_WORKS_STEPS } from "./how-it-works-steps";
 import { BrandMark } from "./nav";
 
-export function AuthLayout({ children }: { children: ReactNode }) {
+const DEFAULT_FOOTNOTE = "Open source and self-hosted. Your data stays on this machine.";
+
+export function AuthLayout({
+  children,
+  footnote = DEFAULT_FOOTNOTE,
+}: {
+  children: ReactNode;
+  /** The line at the foot of the wide-screen panel. An edition that runs elsewhere says so. */
+  footnote?: ReactNode;
+}) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <section
@@ -48,9 +57,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
           </ol>
         </div>
 
-        <p className="text-subtle-foreground text-sm">
-          Open source and self-hosted. Your data stays on this machine.
-        </p>
+        <p className="text-subtle-foreground text-sm">{footnote}</p>
       </section>
 
       <main className="mx-auto flex w-full max-w-md flex-col justify-center gap-5 px-4 py-10 sm:px-6">
