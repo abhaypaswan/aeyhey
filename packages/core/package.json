@@ -34,7 +34,7 @@
     "api:spec": "tsx src/api/cli-openapi.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.0",
+    "@ai-sdk/anthropic": "^4.0.105",
     "@ai-sdk/openai": "^2.0.0",
     "@mozilla/readability": "^0.5.0",
     "@node-rs/argon2": "^2.0.2",
