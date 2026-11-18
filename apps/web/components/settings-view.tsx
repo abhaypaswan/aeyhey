@@ -169,8 +169,11 @@ export function SettingsView({
   flags: Flags;
   channels: { telegramConfigured: boolean; emailConfigured: boolean };
 }) {
+  // The AI tab is only for choosing a model: your own key, or a local Ollama. Where the
+  // server runs the AI for everyone (the hosted edition) there is nothing to choose.
+  const tabs = TABS.filter((option) => option.id !== "ai" || flags.byoKeys || flags.ollama);
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>(
-    TABS.find((option) => option.id === initialTab)?.id ?? "schedule",
+    tabs.find((option) => option.id === initialTab)?.id ?? "schedule",
   );
   const [settings, setSettings] = useState(initial);
   const [saved, setSaved] = useState(false);
@@ -222,7 +225,7 @@ export function SettingsView({
         onValueChange={(next) => next && setTab(next as (typeof TABS)[number]["id"])}
       >
         <TabsList aria-label="Settings sections">
-          {TABS.map((option) => (
+          {tabs.map((option) => (
             <TabsTab key={option.id} value={option.id}>
               {option.label}
             </TabsTab>

@@ -17,13 +17,17 @@ export default async function AiSettingsPage({
   if (state.state === "needs_setup") redirect("/setup");
   if (state.state === "needs_login") redirect("/login");
 
+  // Nothing to set up where the server runs the AI for everyone and takes no own keys.
+  const edition = await flags();
+  if (!edition.byoKeys && !edition.ollama) redirect("/settings");
+
   const environment = loadEnvFn();
   const params = await searchParams;
 
   return (
     <AiSettings
       locked={lockedSettingKeys(environment)}
-      flags={await flags()}
+      flags={edition}
       firstRun={params["first"] === "1"}
       current={environment.AI_PROVIDER === "mock" ? undefined : environment.AI_PROVIDER}
       defaults={{ ollamaUrl: environment.OLLAMA_BASE_URL, openaiUrl: environment.OPENAI_BASE_URL }}

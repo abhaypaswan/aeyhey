@@ -673,3 +673,35 @@ describe("deleting the account from the app", () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe("own AI keys", () => {
+  const provider = {
+    kind: "openai",
+    baseUrl: "https://api.openai.com/v1",
+    apiKey: "sk-test-not-real",
+    models: { summary: "gpt-4o-mini" },
+    isDefault: true,
+  };
+
+  it("are taken where the edition allows them", async () => {
+    const saved = await api.saveProvider(
+      request("POST", "/api/ai/providers", { cookie, origin: BASE, body: provider }),
+    );
+    expect(saved.status).toBe(200);
+  });
+
+  it("are refused, saved or tested, where the server runs the AI for everyone", async () => {
+    ({ api } = setup([{ name: "no-own-keys", flags: { byoKeys: false } }]));
+    for (const call of [api.saveProvider, api.testProvider]) {
+      const response = await call(
+        request("POST", "/api/ai/providers", { cookie, origin: BASE, body: provider }),
+      );
+      expect(response.status).toBe(403);
+      expect(((await response.json()) as { error: { code: string } }).error.code).toBe(
+        "own_keys_off",
+      );
+    }
+    const listed = await api.listProviders(request("GET", "/api/ai/providers", { cookie }));
+    expect(((await listed.json()) as { providers: unknown[] }).providers).toHaveLength(0);
+  });
+});

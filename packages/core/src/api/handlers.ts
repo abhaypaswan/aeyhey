@@ -838,6 +838,8 @@ export function createApi(deps: ApiDeps) {
 
     // ---------------------------------------------------------------- ai providers
 
+    // An instance that runs the AI for everyone (the hosted one) takes nobody's own keys:
+    // the screens for them are hidden, and these refuse them as well.
     listProviders: route(base, async (ctx) => {
       const { aiProviders } = handle.schema;
       const { eq } = await import("drizzle-orm");
@@ -862,6 +864,7 @@ export function createApi(deps: ApiDeps) {
     }),
 
     saveProvider: route({ ...base, schema: schemas.AiProviderSchema }, async (ctx) => {
+      if (!registry.config.flags.byoKeys) return ownKeysOff();
       const { aiProviders } = handle.schema;
 
       await handle.db
@@ -893,6 +896,8 @@ export function createApi(deps: ApiDeps) {
     }),
 
     testProvider: route({ ...base, schema: schemas.AiProviderSchema }, async (ctx) => {
+      // Off too, or a pasted key would still be sent to whatever address was typed.
+      if (!registry.config.flags.byoKeys) return ownKeysOff();
       // Tested with what the user just typed, before it is saved, so a wrong key never
       // gets stored in the first place.
       const result = await testConnection({
@@ -1360,4 +1365,13 @@ function avatarResponse(
         cache === "public" ? "public, max-age=86400" : "private, max-age=31536000, immutable",
     },
   });
+}
+
+/** The answer when someone tries to give this instance their own AI key and it takes none. */
+function ownKeysOff(): Response {
+  return fail(
+    403,
+    "own_keys_off",
+    "This server runs the AI for you, so it does not take your own API keys.",
+  );
 }
