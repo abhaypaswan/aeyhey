@@ -39,6 +39,15 @@ and strong things to show. Use it to try and to demo every new feature. When a f
 needs data the library does not have, add it there rather than clicking it in by hand,
 so the next reset still has it.
 
+## A fresh instance, without the demo
+
+`pnpm local:fresh` runs the same app with no demo data and sign-in on, from `data/fresh/`
+(also git-ignored), so it opens on account creation the way a new person sees it.
+`pnpm local:fresh:reset` wipes it to start over. No AI provider is set, as on a real
+first run; prefix `AI_PROVIDER=mock` to try saving links and writing questions without a
+key. The switch between the two is `DEMO_MODE`: true seeds the demo library, uses the
+mock AI and turns sign-in off.
+
 ## The rules that do not bend
 
 - **No em dashes** anywhere: code comments, UI copy, docs, commit messages.
