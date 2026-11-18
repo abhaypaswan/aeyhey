@@ -151,7 +151,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "host",
     ],
     answer:
-      "Your library is yours. Export it from Settings, under Data, and delete your account there too. Aeyhey is open source, so you can also run it yourself.",
+      "Your library is yours. Export it from Settings, under Data. Where you have an account, Delete account is there too, and it removes everything for good. Aeyhey is open source, so you can also run it yourself.",
   },
 ];
 

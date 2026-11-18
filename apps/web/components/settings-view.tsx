@@ -157,12 +157,15 @@ export function SettingsView({
   profile,
   initialTab,
   publicUrl,
+  accountHref = null,
 }: {
   initial: Settings;
   /** From ?tab= in the address, so a link can open a tab such as profile. */
   initialTab?: string;
   /** Where this instance is reached, for the agent setup snippets. */
   publicUrl: string;
+  /** Where the account is deleted, when the sign-in provider has accounts (hosted). */
+  accountHref?: string | null;
   profile: { displayName: string; avatarUrl: string | null };
   timezones: TimezoneOption[];
   locked: string[];
@@ -573,6 +576,19 @@ export function SettingsView({
                 Download my data
               </a>
             </div>
+
+            {accountHref ? (
+              <div className="border-border flex flex-col gap-2 border-t pt-4">
+                <p className="text-sm font-semibold">Delete account</p>
+                <p className="text-muted-foreground text-xs">
+                  Removes every link, deck, review and upload, then your account and sign-in. It
+                  cannot be undone, so download your data first.
+                </p>
+                <a href={accountHref} className="text-danger text-sm font-semibold underline">
+                  Delete my account
+                </a>
+              </div>
+            ) : null}
           </Card>
         ) : null}
 

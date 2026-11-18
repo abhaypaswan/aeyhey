@@ -4,7 +4,7 @@
 import { redirect } from "next/navigation";
 import { repos } from "@aeyhey/core";
 import { env as loadEnvFn, lockedSettingKeys } from "@aeyhey/core";
-import { pageState, flags } from "../../lib/server";
+import { accountPage, pageState, flags } from "../../lib/server";
 import { timezoneOptions } from "../../lib/timezones";
 import { SettingsView } from "../../components/settings-view";
 
@@ -38,6 +38,7 @@ export default async function SettingsPage({
       }}
       locked={lockedSettingKeys(environment)}
       flags={await flags()}
+      accountHref={await accountPage()}
       channels={{
         telegramConfigured: Boolean(environment.TELEGRAM_BOT_TOKEN),
         emailConfigured: Boolean(environment.SMTP_URL),

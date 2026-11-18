@@ -49,6 +49,15 @@ export async function flags(): Promise<extensions.FeatureFlags> {
   return (await getRuntime()).registry.config.flags;
 }
 
+/**
+ * The page where the account is deleted, only where the sign-in provider can delete one
+ * (hosted). Local sign-in names an account route too, but has no account to delete.
+ */
+export async function accountPage(): Promise<string | null> {
+  const { auth } = (await getRuntime()).registry;
+  return auth.deleteAccount ? (auth.routes?.account ?? null) : null;
+}
+
 /** Links plugins add to the sidebar. Empty in the community build. */
 export async function pluginNav(): Promise<{ href: string; label: string; icon?: string }[]> {
   const { registry } = await getRuntime();
