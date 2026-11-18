@@ -24,9 +24,11 @@ test.describe("the command palette", () => {
     await expect(page.getByText("Do", { exact: true })).toBeVisible();
     await expect(page.getByText("Go to", { exact: true })).toBeVisible();
 
-    await input.fill("deck");
-    await expect(page.getByRole("option", { name: /new deck from topics/i })).toBeVisible();
+    await input.fill("map");
+    await expect(page.getByRole("option", { name: /^map$/i })).toBeVisible();
     await expect(page.getByRole("option", { name: /start a session/i })).toHaveCount(0);
+    // aey takes anything typed, so it stays, carrying the text.
+    await expect(page.getByRole("option", { name: /ask aey.*map/i })).toBeVisible();
 
     // Escape clears the query first and closes only once there is nothing to clear,
     // which is what a palette with a search field in it should do.
@@ -36,6 +38,24 @@ test.describe("the command palette", () => {
 
     await page.keyboard.press("Escape");
     await expect(palette).toBeHidden();
+  });
+
+  test("hands what you typed to aey, once", async ({ page }) => {
+    await page.goto("/inbox");
+    await page.waitForLoadState("networkidle");
+    await page.keyboard.press("ControlOrMeta+k");
+
+    const input = page.getByRole("combobox", { name: /search commands/i });
+    await input.fill("how does kafka keep order");
+    await page.getByRole("option", { name: /ask aey/i }).click();
+
+    // Home, with the question already sent, and an address that will not send it again.
+    await expect(page).toHaveURL(/\/$/);
+    const aey = page.getByRole("region", { name: "aey" });
+    await expect(aey.getByText("how does kafka keep order")).toHaveCount(1);
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await expect(aey.getByText("how does kafka keep order")).toHaveCount(1);
   });
 
   test("sits over the page rather than in a corner of it", async ({ page }) => {

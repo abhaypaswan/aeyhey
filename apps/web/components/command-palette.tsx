@@ -7,8 +7,9 @@
 // match marking, roving highlight, the dialog's focus trap, dismissal, and returning
 // focus to whatever opened it.
 //
-// What Aeyhey supplies is the content: where you can go, what you can do, and a search
-// over your own links that runs against the API as you type.
+// What Aeyhey supplies is the content: where you can go, a search over your own links
+// that runs against the API as you type, and whatever you typed handed to aey, which is
+// how anything gets added or asked now.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -24,20 +25,11 @@ import {
   CommandStatus,
 } from "@ui-sdk/react/command";
 import { Dialog, DialogBackdrop, DialogContent, DialogTitle } from "@ui-sdk/react/dialog";
-import { UserRound } from "lucide-react";
+import { House, Map as MapIcon, UserRound } from "lucide-react";
 import { apiClient } from "../lib/client";
 import { OPEN_PALETTE_EVENT } from "./nav";
 import { hostOf, linkTitle } from "../lib/format";
-import {
-  Brain,
-  Inbox,
-  Link2,
-  Play,
-  Settings,
-  Sparkles,
-  TrendingUp,
-  contentTypeIcon,
-} from "./icons";
+import { Inbox, Play, Settings, Sparkles, TrendingUp, contentTypeIcon } from "./icons";
 
 interface LinkHit {
   id: string;
@@ -47,29 +39,19 @@ interface LinkHit {
   contentType?: string | null;
 }
 
-/** Everything the palette can do, besides opening one of your own links. */
+/** Hands the typed text to aey on Home. Adding a link, making a deck and asking all go
+ * through aey, so one item covers them. */
+const ASK = "ask";
+
+/** Everything the palette can do, besides asking aey or opening one of your own links. */
 const ACTIONS = [
   { value: "session", label: "Start a session", icon: Play, href: "/session", group: "Do" },
-  { value: "add", label: "Add links", icon: Link2, href: "/?say=https%3A%2F%2F", group: "Do" },
-  {
-    value: "deck-topics",
-    label: "New deck from topics",
-    icon: Sparkles,
-    href: "/?say=Make%20a%20deck%20on%20",
-    group: "Do",
-  },
-  {
-    value: "deck-resume",
-    label: "New deck from your resume",
-    icon: Brain,
-    href: "/",
-    group: "Do",
-  },
+  { value: "home", label: "Home", icon: House, href: "/", group: "Go to" },
   { value: "inbox", label: "Inbox", icon: Inbox, href: "/inbox", group: "Go to" },
   { value: "profile", label: "Profile", icon: UserRound, href: "/profile", group: "Go to" },
+  { value: "map", label: "Map", icon: MapIcon, href: "/map", group: "Go to" },
   { value: "stats", label: "Stats", icon: TrendingUp, href: "/stats", group: "Go to" },
   { value: "settings", label: "Settings", icon: Settings, href: "/settings", group: "Go to" },
-  { value: "today", label: "Today", icon: Play, href: "/", group: "Go to" },
 ] as const;
 
 export function CommandPalette() {
@@ -107,6 +89,11 @@ export function CommandPalette() {
     window.addEventListener(OPEN_PALETTE_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_PALETTE_EVENT, onOpen);
   }, []);
+
+  // Each opening starts empty, so "Ask aey" never sends what was typed last time.
+  useEffect(() => {
+    if (!open) setQuery("");
+  }, [open]);
 
   // Close on navigation, so the palette never lingers over the page it just opened.
   useEffect(() => {
@@ -146,6 +133,18 @@ export function CommandPalette() {
 
   const run = useCallback(
     (value: string) => {
+      if (value === ASK) {
+        const text = query.trim();
+        setOpen(false);
+        if (!text && pathname === "/") {
+          // Already on Home: just put the cursor in aey's box, once the dialog has let go.
+          setTimeout(() => document.getElementById("assistant-box")?.focus(), 50);
+          return;
+        }
+        router.push(text ? `/?ask=${encodeURIComponent(text)}` : "/#aey");
+        return;
+      }
+
       const action = ACTIONS.find((candidate) => candidate.value === value);
       if (action) {
         router.push(action.href);
@@ -159,7 +158,7 @@ export function CommandPalette() {
         setOpen(false);
       }
     },
-    [hits, router],
+    [hits, pathname, query, router],
   );
 
   const groups = ["Do", "Go to"] as const;
@@ -178,7 +177,9 @@ export function CommandPalette() {
           onQueryChange={setQuery}
           // Aeyhey's own link results are already filtered by the server, so they must
           // not be filtered again by the client's fuzzy match on a title it cannot see.
+          // aey takes anything, so it is never filtered out either.
           filter={(item, text) =>
+            item.value === ASK ||
             String(item.value).startsWith("link:") ||
             String(item.label ?? "")
               .toLowerCase()
@@ -187,7 +188,7 @@ export function CommandPalette() {
         >
           <CommandInput
             aria-label="Search commands and your links"
-            placeholder="Jump to, or search your links"
+            placeholder="Jump to, search your links, or ask aey"
           />
 
           <CommandStatus>{searching ? "Searching your links" : null}</CommandStatus>
@@ -199,6 +200,20 @@ export function CommandPalette() {
             {groups.map((group) => (
               <CommandGroup key={group}>
                 <CommandGroupLabel>{group}</CommandGroupLabel>
+                {group === "Do" ? (
+                  <CommandItem value={ASK} label="Ask aey">
+                    <CommandItemIcon>
+                      <Sparkles size={15} />
+                    </CommandItemIcon>
+                    {query.trim() ? (
+                      <span className="min-w-0 truncate">
+                        Ask aey <span className="font-semibold">&ldquo;{query.trim()}&rdquo;</span>
+                      </span>
+                    ) : (
+                      "Ask aey anything"
+                    )}
+                  </CommandItem>
+                ) : null}
                 {ACTIONS.filter((action) => action.group === group).map((action) => (
                   <CommandItem key={action.value} value={action.value} label={action.label}>
                     <CommandItemIcon>

@@ -146,9 +146,12 @@ function errorText(thrown: unknown): string {
 
 export function Assistant({
   initialText = "",
+  ask = "",
   className,
 }: {
   initialText?: string;
+  /** Sent as soon as the conversation is restored, as if typed and sent: from Cmd+K. */
+  ask?: string;
   className?: string;
 }) {
   const router = useRouter();
@@ -193,7 +196,8 @@ export function Assistant({
     thread.current?.scrollTo({ top: thread.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
   useEffect(() => {
-    if (initialText) box.current?.focus();
+    // /#aey (Cmd+K, "Ask aey" with nothing typed) puts the cursor straight in the box.
+    if (initialText || window.location.hash === "#aey") box.current?.focus();
   }, [initialText]);
 
   const push = useCallback((message: Message) => setMessages((list) => [...list, message]), []);
@@ -423,6 +427,20 @@ export function Assistant({
     },
     [busy, file, messages, push, update, readDocument, router],
   );
+
+  // A question asked from the command palette goes straight in, once. The address is
+  // cleared afterwards so reloading the page does not ask it again.
+  const asked = useRef(false);
+  useEffect(() => {
+    if (!restored || asked.current || !ask.trim()) return;
+    asked.current = true;
+    // Straight on the browser's history: Next keeps the address it was given through its
+    // own router, so a router.replace here can be undone by the navigation finishing.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("ask");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    void send(ask);
+  }, [ask, restored, send]);
 
   const clear = (): void => {
     setMessages([]);

@@ -42,7 +42,10 @@ export default async function HomePage({
 }) {
   // ?say= opens Home with the assistant's box already filled, for the old routes that
   // used to add things (/add, /decks/new) and for anything that links here with a request.
-  const say = (await searchParams)["say"] ?? "";
+  const params = await searchParams;
+  const say = params["say"] ?? "";
+  // ?ask= is sent to aey straight away, for a question typed into the command palette.
+  const ask = params["ask"] ?? "";
   const state = await pageState();
   if (state.state === "needs_setup") redirect("/setup");
   if (state.state === "needs_login") redirect("/login");
@@ -327,6 +330,7 @@ export default async function HomePage({
         <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start lg:pt-1">
           <Assistant
             initialText={say}
+            ask={ask}
             className="h-[32rem] lg:h-[calc(100dvh-7rem)] lg:max-h-[48rem]"
           />
         </aside>
