@@ -22,6 +22,7 @@ import {
   StreakFlame,
 } from "../components/drawings";
 import { Assistant } from "../components/assistant";
+import { DeckRow } from "../components/deck-row";
 import { KnowledgeMap } from "../components/knowledge-map";
 import { loadMapData } from "../lib/map-data";
 import { hostOf, midSentence, pluralize } from "../lib/format";
@@ -45,7 +46,17 @@ export default async function HomePage({
   const now = new Date();
 
   // The same numbers GET /api/today returns, so the phone app and this page agree.
-  const [today, map] = await Promise.all([sessions.loadToday(scope, now), loadMapData(scope)]);
+  const [today, map, allDecks] = await Promise.all([
+    sessions.loadToday(scope, now),
+    loadMapData(scope),
+    repos.listDecks(scope, now),
+  ]);
+  // Decks live on Home now: due ones first, paused ones last, the first six shown.
+  const rank = (deck: (typeof allDecks)[number]): number =>
+    deck.pausedAt ? 2 : deck.counts.due > 0 ? 0 : 1;
+  const decks = allDecks
+    .filter((deck) => deck.kind !== "links")
+    .sort((a, b) => rank(a) - rank(b) || b.counts.due - a.counts.due);
 
   // Journal drafts waiting for a keep or drop, from the last two weeks.
   const twoWeeksAgo = new Date(now.getTime() - 13 * 86_400_000).toISOString().slice(0, 10);
@@ -247,6 +258,33 @@ export default async function HomePage({
                         />
                       </span>
                     </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {decks.length > 0 ? (
+            <section aria-label="Your decks" className="mt-[30px] lg:mt-12">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="font-display text-[17px] font-[640] tracking-[-0.006em] lg:text-xl">
+                  Your decks
+                </h2>
+                <span className="flex items-baseline gap-4 text-sm font-semibold">
+                  <a href="/?say=Make%20a%20deck%20on%20" className="text-primary hover:underline">
+                    New deck
+                  </a>
+                  {decks.length > 6 ? (
+                    <a href="/decks" className="text-primary hover:underline">
+                      See all {decks.length}
+                    </a>
+                  ) : null}
+                </span>
+              </div>
+              <ul className="mt-1">
+                {decks.slice(0, 6).map((deck, index) => (
+                  <li key={deck.id}>
+                    <DeckRow deck={deck} divided={index > 0} />
                   </li>
                 ))}
               </ul>

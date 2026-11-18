@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The app shell: one top bar, the same on every screen size.
 //
-// It follows the phone app. Three places matter day to day, Home, Inbox and Decks, and
-// they sit in a row of pill tabs. Everything about you (stats, journal, your page,
+// Two places matter day to day: Home, which holds the session, the decks and the
+// assistant, and Inbox. They sit in a row of pill tabs. Everything about you (stats, journal, your page,
 // settings, reminders) lives behind your picture on the right. On a wide screen the bar
 // also carries search, because a keyboard is there. Adding is done where it belongs:
 // Home's box takes a link or a topic, and Search offers Add links from anywhere.
@@ -52,13 +52,13 @@ export const OPEN_PALETTE_EVENT = "aeyhey:open-palette";
 const TABS = [
   { href: "/", label: "Home", wideOnly: false },
   { href: "/inbox", label: "Inbox", wideOnly: false },
-  { href: "/decks", label: "Decks", wideOnly: false },
 ];
 
 function activeTab(pathname: string): string | null {
   if (pathname === "/") return "/";
   if (/^\/(inbox|links|add)/.test(pathname)) return "/inbox";
-  if (pathname.startsWith("/decks")) return "/decks";
+  // Decks live on Home now; a deck's own page counts as part of Home.
+  if (pathname.startsWith("/decks")) return "/";
   if (pathname.startsWith("/map")) return "/map";
   return null;
 }

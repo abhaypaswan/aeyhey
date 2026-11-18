@@ -11,17 +11,11 @@ import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 import { repos } from "@aeyhey/core";
 import { pageState } from "../../lib/server";
-import { DashedCard, DeckStack } from "../../components/drawings";
+import { DashedCard } from "../../components/drawings";
+import { DeckRow } from "../../components/deck-row";
 import { LinkButton, cx } from "../../components/ui";
-import { pluralize } from "../../lib/format";
 
 export const dynamic = "force-dynamic";
-
-const SOURCE: Record<string, string> = {
-  resume: "From your resume",
-  document: "From a document",
-  manual: "Written by you",
-};
 
 export default async function DecksPage() {
   const state = await pageState();
@@ -105,52 +99,11 @@ export default async function DecksPage() {
             {group.label}
           </h2>
           <ul className="grid lg:grid-cols-2 lg:gap-x-12">
-            {group.decks.map((deck, index) => {
-              const source = SOURCE[deck.kind] ?? "From topics";
-              const meta =
-                deck.counts.total === 0
-                  ? `${source} · no questions yet`
-                  : `${source} · ${pluralize(deck.counts.total, "question")}${
-                      deck.counts.learned > 0 ? `, ${deck.counts.learned} learned` : ""
-                    }`;
-              return (
-                <li key={deck.id} className="relative">
-                  {/* The hairline sits above every row but the first in its column. */}
-                  <span
-                    aria-hidden="true"
-                    className={cx(
-                      "border-border absolute left-[54px] right-0 top-0 border-t-[0.5px]",
-                      index === 0 && "hidden",
-                      index === 1 && "lg:hidden",
-                    )}
-                  />
-                  <a
-                    href={`/decks/${deck.id}`}
-                    className="-mx-2 flex items-center gap-3.5 rounded-[10px] px-2 py-3.5 transition-colors lg:hover:bg-[color-mix(in_srgb,var(--color-quiet)_60%,transparent)]"
-                  >
-                    <DeckStack
-                      id={deck.id}
-                      kind={deck.kind}
-                      total={deck.counts.total}
-                      learned={deck.counts.learned}
-                    />
-                    <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                      <span className="font-display line-clamp-2 text-lg font-[580] leading-[1.2]">
-                        {deck.name}
-                      </span>
-                      <span className="text-muted-foreground truncate text-[13px]">{meta}</span>
-                    </span>
-                    {deck.pausedAt ? (
-                      <span className="text-muted-foreground ml-2.5 shrink-0 text-sm">Paused</span>
-                    ) : deck.counts.due > 0 ? (
-                      <span className="text-primary ml-2.5 shrink-0 text-sm font-semibold">
-                        {deck.counts.due} due
-                      </span>
-                    ) : null}
-                  </a>
-                </li>
-              );
-            })}
+            {group.decks.map((deck, index) => (
+              <li key={deck.id} className={cx(index === 1 && "lg:[&>a>span:first-child]:hidden")}>
+                <DeckRow deck={deck} divided={index > 0} />
+              </li>
+            ))}
           </ul>
         </section>
       ))}
