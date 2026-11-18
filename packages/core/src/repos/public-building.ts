@@ -7,7 +7,7 @@
 // or bump. Everything here is built from what the chosen setting allows, and nothing
 // else, so a visitor's numbers always match what they can see.
 
-import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, ne } from "drizzle-orm";
 import type { Scope } from "./context";
 
 export const BUILDING_VISIBILITIES = ["off", "numbers", "highlights"] as const;
@@ -146,7 +146,8 @@ export async function loadPublicBuilt(
     .where(
       and(
         eq(agentHighlights.userId, scope.userId),
-        eq(agentHighlights.status, "kept"),
+        // Drafted lines go on the page by themselves; only ones removed stay off.
+        ne(agentHighlights.status, "dropped"),
         eq(agentHighlights.hiddenFromPage, false),
         gte(agentHighlights.day, range.from),
         lte(agentHighlights.day, range.to),

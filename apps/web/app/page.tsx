@@ -58,12 +58,6 @@ export default async function HomePage({
     .filter((deck) => deck.kind !== "links")
     .sort((a, b) => rank(a) - rank(b) || b.counts.due - a.counts.due);
 
-  // Journal drafts waiting for a keep or drop, from the last two weeks.
-  const twoWeeksAgo = new Date(now.getTime() - 13 * 86_400_000).toISOString().slice(0, 10);
-  const journalDrafts = (await repos.listHighlights(scope, { from: twoWeeksAgo })).filter(
-    (h) => h.status === "draft",
-  ).length;
-
   const { paused, linkTotal, questionTotal, streak, links } = today;
   const nothingSaved = linkTotal + questionTotal === 0;
   const due = today.due.total > 0;
@@ -145,16 +139,6 @@ export default async function HomePage({
                 />
               </div>
             )}
-
-            {journalDrafts > 0 ? (
-              <a
-                href="/your-page"
-                className="text-muted-foreground hover:text-foreground mt-3 text-sm underline-offset-2 hover:underline"
-              >
-                {pluralize(journalDrafts, "highlight")} from your coding sessions{" "}
-                {journalDrafts === 1 ? "is" : "are"} waiting on your page.
-              </a>
-            ) : null}
           </section>
 
           {nothingSaved ? null : (

@@ -41,7 +41,7 @@ export interface PageProfile {
 const BUILDING_OPTIONS = [
   { value: "off", label: "Keep it private" },
   { value: "numbers", label: "Numbers only" },
-  { value: "highlights", label: "Numbers and kept highlights" },
+  { value: "highlights", label: "Numbers and highlights" },
 ] as const;
 
 export interface PageLink {
@@ -386,7 +386,7 @@ function YourPage({
                 />
                 <SelectField
                   label="Work with coding agents"
-                  description="Private shows nothing at all, not even in your streak. Highlights you hide in Journal never show."
+                  description="Private shows nothing at all, not even in your streak. Highlights adds a line or two for each day you built something, written from your sessions automatically."
                   value={building}
                   onValueChange={setBuilding}
                   options={BUILDING_OPTIONS}

@@ -91,9 +91,8 @@ describe.skipIf(!pgUrl)("Postgres-specific queries", () => {
       const scope = scopeFor(pg, seeded!.userId);
 
       const page = await publicPageByHandle(pg, "demo");
-      expect(page?.days.length).toBeGreaterThan(0);
-      const drafts = await listHighlights(scope, { from: "2000-01-01" });
-      expect(drafts.filter((h) => h.status === "draft")).toHaveLength(2);
+      expect(page?.days.some((day) => day.built)).toBe(true);
+      expect(await listHighlights(scope, { from: "2000-01-01" })).toHaveLength(6);
 
       await savePublicProfile(scope, { enabled: false });
       expect(await publicPageByHandle(pg, "demo")).toBeNull();

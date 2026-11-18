@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The demo's public page: set up and public, a few read links with what was taken from
-// each, a week of coding sessions, and highlights from them, some kept and two still
-// drafts. So Your page shows everything it can on a fresh demo: the page as a visitor
-// sees it, and the lines still to review above it.
+// each, and a week of coding sessions with the lines written from them, which go on the
+// page by themselves. So Your page shows everything it can on a fresh demo.
 
 import { and, eq } from "drizzle-orm";
 import type { DbHandle } from "../db/client";
 import { newId } from "../ids";
 import type { Scope } from "../repos/context";
-import { recountDay, saveSignal, todayFor } from "../repos/agent";
+import { markDayDigested, recountDay, saveSignal, todayFor } from "../repos/agent";
 import { savePublicProfile } from "../repos/public-page";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -56,49 +55,42 @@ const SEED_HIGHLIGHTS: {
   daysAgo: number;
   text: string;
   kind: "shipped" | "progress" | "learned";
-  status: "kept" | "draft";
   repo: string;
 }[] = [
   {
     daysAgo: 6,
     text: "Shipped the knowledge map: links and questions clustered by shared tags.",
     kind: "shipped",
-    status: "kept",
     repo: "aeyhey",
   },
   {
     daysAgo: 5,
     text: "Postgres and SQLite read JSON differently, so the job dedupe key now has one helper per dialect.",
     kind: "learned",
-    status: "kept",
     repo: "aeyhey",
   },
   {
     daysAgo: 3,
     text: "Moving every add form into one assistant that reads what you paste.",
     kind: "progress",
-    status: "kept",
     repo: "aeyhey",
   },
   {
     daysAgo: 2,
     text: "Shipped full-text search over notes with SQLite FTS5.",
     kind: "shipped",
-    status: "kept",
     repo: "notes-cli",
   },
   {
     daysAgo: 1,
     text: "Decks now live on Home instead of their own tab.",
     kind: "shipped",
-    status: "draft",
     repo: "aeyhey",
   },
   {
     daysAgo: 0,
-    text: "Your page now shows the page as visitors see it, with drafts to review above it.",
+    text: "Your page now shows the page as visitors see it, and Journal is gone.",
     kind: "progress",
-    status: "draft",
     repo: "aeyhey",
   },
 ];
@@ -152,7 +144,11 @@ export async function seedDemoPage(handle: DbHandle, scope: Scope, now: Date): P
     });
     days.add(await todayFor(handle, scope.userId, endedAt));
   }
-  for (const day of days) await recountDay(scope, day);
+  // Marked as digested, so the worker does not write its own lines over these.
+  for (const day of days) {
+    await recountDay(scope, day);
+    await markDayDigested(scope, day, now);
+  }
 
   for (const highlight of SEED_HIGHLIGHTS) {
     const at = new Date(now.getTime() - highlight.daysAgo * DAY_MS - 60 * 60 * 1000);
@@ -162,7 +158,7 @@ export async function seedDemoPage(handle: DbHandle, scope: Scope, now: Date): P
       day: await todayFor(handle, scope.userId, at),
       text: highlight.text,
       kind: highlight.kind,
-      status: highlight.status,
+      status: "draft",
       repo: highlight.repo,
       createdAt: at,
       updatedAt: at,

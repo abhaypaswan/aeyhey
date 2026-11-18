@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Your "What I learned" page, from the inside (PRD 28). Before it exists, set it up.
-// After, it shows the page as a visitor reads it, with the public switch and the
-// highlights from coding sessions still to review above it. This is also where the old
-// Journal went: kept highlights live on the page, under the day they happened.
+// After, it shows the page as a visitor reads it, with the public switch above it. Lines
+// from coding sessions show on the page by themselves, under the day they happened.
 // ?edit=1 opens the settings: the page's name and words, the work side and what shows.
 
 import { redirect } from "next/navigation";
@@ -10,7 +9,7 @@ import { repos } from "@aeyhey/core";
 import { pageState } from "../../lib/server";
 import { getRuntime } from "../../runtime";
 import { PublicPageSettings } from "../../components/public-page-settings";
-import { HighlightReview, OwnerBar } from "../../components/your-page-owner";
+import { OwnerBar } from "../../components/your-page-owner";
 import { PublicPageView } from "../u/[handle]/view";
 
 export const dynamic = "force-dynamic";
@@ -30,14 +29,9 @@ export default async function YourPage({ searchParams }: Props) {
   const profile = await repos.findPublicProfile(scope);
 
   if (profile && !editing) {
-    const today = await repos.todayFor(scope.handle, scope.userId);
-    const weekAgo = new Date(`${today}T00:00:00Z`);
-    weekAgo.setUTCDate(weekAgo.getUTCDate() - 13);
-    const [page, highlights, days] = await Promise.all([
-      repos.publicPageByHandle(scope.handle, profile.handle, { includeHidden: true }),
-      repos.listHighlights(scope, { from: weekAgo.toISOString().slice(0, 10) }),
-      repos.listAgentDays(scope, today),
-    ]);
+    const page = await repos.publicPageByHandle(scope.handle, profile.handle, {
+      includeHidden: true,
+    });
     if (page) {
       const url = `${prefix}${page.handle}`;
       return (
@@ -45,16 +39,7 @@ export default async function YourPage({ searchParams }: Props) {
           page={page}
           pageUrl={url}
           owner
-          top={
-            <>
-              <OwnerBar url={url} handle={page.handle} enabled={profile.enabled} />
-              <HighlightReview
-                today={today}
-                drafts={highlights.filter((h) => h.status === "draft")}
-                canDraft={days.some((d) => d.day === today && d.sessions > 0)}
-              />
-            </>
-          }
+          top={<OwnerBar url={url} handle={page.handle} enabled={profile.enabled} />}
         />
       );
     }

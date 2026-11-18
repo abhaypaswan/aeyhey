@@ -6,7 +6,7 @@
 // are kept after the signals are gone. Once a day is over, the digest job reads its
 // signals and drafts a few highlights for the person to keep or drop.
 
-import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, ne, sql } from "drizzle-orm";
 import type { DbHandle } from "../db/client";
 import type { AgentModelUsage, AgentSessionDetails } from "../db/types";
 import { newId } from "../ids";
@@ -586,7 +586,8 @@ export async function keptDays(scope: Scope, from: string): Promise<string[]> {
       and(
         eq(agentHighlights.userId, scope.userId),
         gte(agentHighlights.day, from),
-        eq(agentHighlights.status, "kept"),
+        // Drafted lines go on the page by themselves; only ones removed stay off.
+        ne(agentHighlights.status, "dropped"),
       ),
     )
     .orderBy(asc(agentHighlights.day));

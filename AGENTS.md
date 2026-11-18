@@ -37,8 +37,7 @@ The library is `packages/core/src/seed/` (`data.ts` and `library.ts`): links and
 across backend engineering, a book, class 11 physics, organic chemistry and language
 models, with review history and graded answers, so every screen has learned, due, weak
 and strong things to show. `page.ts` sets up the public page at `/u/demo` with
-takeaways, a week of coding sessions and highlights, two of them drafts, so Your page has
-something to review. Use it to try and to demo every new feature. When a feature
+takeaways and a week of coding sessions with the lines written from them. Use it to try and to demo every new feature. When a feature
 needs data the library does not have, add it there rather than clicking it in by hand,
 so the next reset still has it.
 

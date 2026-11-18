@@ -492,7 +492,8 @@ function mockLibraryAnswer(prompt: string): unknown {
 
 /**
  * One line per goal, from the goals JSON the prompt carries: the first commit when there
- * is one, otherwise the time spent. Crude, but it shows the real shape in demo mode.
+ * is one, otherwise the session title; goals with neither are left out. Crude, but it
+ * shows the real shape in demo mode.
  */
 function mockAgentDigest(prompt: string): unknown {
   const match = /GOALS_JSON\n([\s\S]*?)\nEND_GOALS_JSON/.exec(prompt);
@@ -509,26 +510,20 @@ function mockAgentDigest(prompt: string): unknown {
   } catch {
     goals = [];
   }
-  // A standup-shaped note per goal: what changed, then how big it was.
+  // A standup-shaped note per goal that says what was done: a commit or a session title.
+  // Time and line counts alone are a log, not a summary, so those goals are left out,
+  // as the real prompt asks.
+  const said = goals.filter((goal) => goal.commits.length > 0 || (goal.titles?.length ?? 0) > 0);
   return {
-    highlights: goals.slice(0, 6).map((goal) => {
+    highlights: said.slice(0, 6).map((goal) => {
       const where = goal.repo ?? "a side project";
-      const size =
-        goal.linesAdded || goal.linesRemoved
-          ? ` About ${goal.linesAdded ?? 0} lines added and ${goal.linesRemoved ?? 0} removed.`
-          : "";
       if (goal.commits.length > 0) {
         const more =
           goal.commits.length > 1 ? `, along with ${goal.commits.length - 1} related changes` : "";
-        return {
-          text: `${goal.commits[0]} in ${where}${more}.${size}`,
-          kind: "shipped",
-          repo: goal.repo,
-        };
+        return { text: `${goal.commits[0]} in ${where}${more}.`, kind: "shipped", repo: goal.repo };
       }
-      const topic = goal.titles?.[0] ?? `work on ${where}`;
       return {
-        text: `Spent ${goal.minutes} minutes on ${topic}; still going.${size}`,
+        text: `Worked on ${goal.titles![0]} in ${where}.`,
         kind: "progress",
         repo: goal.repo,
       };

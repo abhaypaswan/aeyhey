@@ -235,7 +235,13 @@ describe("the digest", () => {
       );
     }
     for (let i = 0; i < 10; i += 1) {
-      await report(session(`b${i}`, "11:00", "11:40", { repo: "blog", branch: "draft" }));
+      await report(
+        session(`b${i}`, "11:00", "11:40", {
+          repo: "blog",
+          branch: "draft",
+          commits: [`Post on caching, part ${i}`],
+        }),
+      );
     }
     const res = await api.draftHighlights(
       request("POST", "/api/agent/digest", appToken, { day: DAY }),
@@ -245,6 +251,15 @@ describe("the digest", () => {
     expect(body.highlights.length).toBeLessThanOrEqual(5);
     expect(new Set(body.highlights.map((h) => h.repo))).toEqual(new Set(["aeyhey", "blog"]));
     expect(body.highlights.every((h) => h.status === "draft")).toBe(true);
+  });
+
+  it("writes nothing for work whose commits and titles do not say what it was", async () => {
+    await report(session("q1", "11:00", "11:40", { repo: "blog", branch: "draft" }));
+    const res = await api.draftHighlights(
+      request("POST", "/api/agent/digest", appToken, { day: DAY }),
+    );
+    const body = (await res.json()) as { highlights: unknown[] };
+    expect(body.highlights).toEqual([]);
   });
 
   it("keeps what the person decided when it runs again, and pinned lines too", async () => {

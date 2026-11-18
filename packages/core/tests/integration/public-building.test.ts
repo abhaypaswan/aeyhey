@@ -20,6 +20,7 @@ import {
   DAYS_PAGE_SIZE,
 } from "../../src/repos/public-page";
 import {
+  listHighlights,
   pinHighlight,
   replaceDrafts,
   saveSignal,
@@ -73,8 +74,13 @@ beforeEach(async () => {
   const secret = await pinHighlight(scope, { text: "Client work for Acme", now: daysAgo(2) });
   await updateHighlight(scope, secret.id, { hiddenFromPage: true });
   await replaceDrafts(scope, localDay(daysAgo(3), "UTC"), [
-    { text: "A draft nobody reviewed", kind: "progress", repo: "aeyhey" },
+    { text: "Drafted from a session", kind: "progress", repo: "aeyhey" },
+    { text: "A line they removed", kind: "learned", repo: "aeyhey" },
   ]);
+  const removed = (await listHighlights(scope, { from: localDay(daysAgo(3), "UTC") })).find(
+    (h) => h.text === "A line they removed",
+  )!;
+  await updateHighlight(scope, removed.id, { status: "dropped" });
   expect(pinned.status).toBe("kept");
 
   await savePublicProfile(scope, { handle: "abhay", enabled: true });
@@ -131,18 +137,23 @@ describe("numbers", () => {
 });
 
 describe("numbers and highlights", () => {
-  it("shows kept lines only: never hidden ones or drafts", async () => {
+  it("shows drafted and kept lines by themselves, never hidden or removed ones", async () => {
     await savePublicProfile(scope, { buildingVisibility: "highlights" });
     const visible = await page();
     // The agent day gets its own card with a Built section; the reading day keeps Learned.
     const built = visible.days.filter((d) => d.built);
-    expect(built).toHaveLength(1);
+    expect(built).toHaveLength(2);
     expect(built[0]!.built).toEqual({ done: ["Shipped the journal"], progress: [], learned: [] });
+    expect(built[1]!.built).toEqual({
+      done: [],
+      progress: ["Drafted from a session"],
+      learned: [],
+    });
     expect(built[0]!.learned).toEqual([]);
     expect(visible.days.find((d) => d.learned.length > 0)!.built).toBeNull();
     const text = JSON.stringify(visible);
     expect(text).not.toContain("Acme");
-    expect(text).not.toContain("A draft nobody reviewed");
+    expect(text).not.toContain("A line they removed");
   });
 
   it("shows models and tokens only with their own switch", async () => {
@@ -176,7 +187,7 @@ describe("the owner", () => {
         .flatMap((d) => d.highlights)
         .map((h) => h.text)
         .sort(),
-    ).toEqual(["A draft nobody reviewed", "Client work for Acme", "Shipped the journal"]);
+    ).toEqual(["Client work for Acme", "Drafted from a session", "Shipped the journal"]);
   });
 });
 
@@ -218,10 +229,9 @@ describe("the day feed loads in pages", () => {
       seen.push(...next.days.map((d) => d.day));
       cursor = next.nextCursor;
     }
-    // 12 + 1 reading days, plus the one agent day with a kept line (the other only has a
-    // draft): each once, newest first.
-    expect(seen).toHaveLength(14);
-    expect(new Set(seen).size).toBe(14);
+    // 12 + 1 reading days, plus the two agent days with lines: each once, newest first.
+    expect(seen).toHaveLength(15);
+    expect(new Set(seen).size).toBe(15);
     expect([...seen].sort().reverse()).toEqual(seen);
 
     // The page itself carries only the first page.
@@ -230,7 +240,7 @@ describe("the day feed loads in pages", () => {
     expect(page!.nextDaysCursor).toBe(first.nextCursor);
   });
 
-  it("never pages in hidden lines, drafts or agent days when building is hidden", async () => {
+  it("never pages in hidden or removed lines, or agent days when building is hidden", async () => {
     const all = [];
     for (const showBuilt of [true, false]) {
       let cursor: string | null = null;
@@ -242,7 +252,7 @@ describe("the day feed loads in pages", () => {
     }
     const text = JSON.stringify(all);
     expect(text).not.toContain("Client work for Acme");
-    expect(text).not.toContain("A draft nobody reviewed");
+    expect(text).not.toContain("A line they removed");
     const hidden = all.filter((p) => !p.showBuilt).flatMap((p) => p.days);
     expect(hidden.every((d) => d.built === null)).toBe(true);
     expect(hidden.map((d) => d.day)).toEqual([localDay(daysAgo(10), "UTC")]);

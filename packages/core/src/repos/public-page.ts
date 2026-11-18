@@ -9,7 +9,7 @@
 //   2. A public read never returns more than the page shows. publicPageByHandle builds its
 //      own narrow shape, so a new column on links cannot leak onto the page by itself.
 
-import { and, desc, eq, gt, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, lt, ne, or, sql } from "drizzle-orm";
 import type { DbHandle } from "../db/client";
 import type { PublicExperience, PublicLink, PublicProject } from "../db/types";
 import { loadPublicStats, type PublicStats } from "./public-stats";
@@ -769,7 +769,8 @@ export async function loadPublicDays(
   if (options.showBuilt) {
     const conditions = [
       eq(agentHighlights.userId, scope.userId),
-      eq(agentHighlights.status, "kept"),
+      // Drafted lines go on the page by themselves; only ones removed stay off.
+      ne(agentHighlights.status, "dropped"),
       eq(agentHighlights.hiddenFromPage, false),
     ];
     if (before) conditions.push(lt(agentHighlights.day, before));
