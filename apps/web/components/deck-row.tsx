@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // One deck as a row: its stack of cards, its name, what it is from and how far along it
-// is, and what is due. The same row on Home and on the Decks page.
+// is, and what is due. Home lists every deck with it.
 
 import { DeckStack } from "./drawings";
 import { cx } from "./ui";

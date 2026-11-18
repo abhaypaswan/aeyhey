@@ -19,7 +19,7 @@ export default async function ReviewPage({
   if (state.state === "needs_login") redirect("/login");
 
   const sourceId = (await searchParams)["source"];
-  if (!sourceId) redirect("/decks");
+  if (!sourceId) redirect("/");
 
   const { scope } = state.context;
   const decks = await repos.listDecks(scope);

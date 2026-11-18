@@ -33,6 +33,7 @@ import { strong } from "../lib/hue";
 export const dynamic = "force-dynamic";
 
 const MAP_MIN_ITEMS = 6;
+const DECKS_SHOWN = 6;
 
 export default async function HomePage({
   searchParams,
@@ -183,7 +184,7 @@ export default async function HomePage({
                 />
                 <ShelfDivider />
                 <ShelfItem
-                  href="/decks"
+                  {...(decks.length > 0 ? { href: "#your-decks" } : {})}
                   className="flex-[4]"
                   art={<DeckFan decks={today.questionDeckCount} />}
                   title={
@@ -280,7 +281,11 @@ export default async function HomePage({
           ) : null}
 
           {decks.length > 0 ? (
-            <section aria-label="Your decks" className="mt-[30px] lg:mt-12">
+            <section
+              id="your-decks"
+              aria-label="Your decks"
+              className="mt-[30px] scroll-mt-24 lg:mt-12"
+            >
               <div className="flex items-baseline justify-between gap-3">
                 <h2 className="font-display text-[17px] font-[640] tracking-[-0.006em] lg:text-xl">
                   Your decks
@@ -289,20 +294,30 @@ export default async function HomePage({
                   <a href="/?say=Make%20a%20deck%20on%20" className="text-primary hover:underline">
                     New deck
                   </a>
-                  {decks.length > 6 ? (
-                    <a href="/decks" className="text-primary hover:underline">
-                      See all {decks.length}
-                    </a>
-                  ) : null}
                 </span>
               </div>
               <ul className="mt-1">
-                {decks.slice(0, 6).map((deck, index) => (
+                {decks.slice(0, DECKS_SHOWN).map((deck, index) => (
                   <li key={deck.id}>
                     <DeckRow deck={deck} divided={index > 0} />
                   </li>
                 ))}
               </ul>
+              {/* Home is the only place decks are listed, so the rest open in place. */}
+              {decks.length > DECKS_SHOWN ? (
+                <details className="group">
+                  <summary className="text-primary mt-2 cursor-pointer list-none text-sm font-semibold hover:underline group-open:hidden">
+                    Show {pluralize(decks.length - DECKS_SHOWN, "more deck")}
+                  </summary>
+                  <ul>
+                    {decks.slice(DECKS_SHOWN).map((deck) => (
+                      <li key={deck.id}>
+                        <DeckRow deck={deck} divided />
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
             </section>
           ) : null}
         </div>

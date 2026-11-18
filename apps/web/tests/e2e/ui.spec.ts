@@ -175,8 +175,10 @@ test.describe("the session", () => {
 
 test.describe("deck detail", () => {
   async function openADeck(page: Page): Promise<void> {
-    await page.goto("/decks");
+    // Decks are listed on Home; there is no page of their own.
+    await page.goto("/");
     await page
+      .getByRole("region", { name: "Your decks" })
       .getByRole("link")
       .filter({ hasText: /questions/ })
       .first()

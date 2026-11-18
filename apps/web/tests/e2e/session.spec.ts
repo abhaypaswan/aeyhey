@@ -120,9 +120,11 @@ test.describe("the demo flow", () => {
   });
 
   test("decks show their counts, and a deck shows its questions", async ({ page }) => {
-    await page.goto("/decks");
+    // Decks are listed on Home; there is no page of their own.
+    await page.goto("/");
 
     const deck = page
+      .getByRole("region", { name: "Your decks" })
       .getByRole("link")
       .filter({ hasText: /questions/ })
       .first();
@@ -141,8 +143,8 @@ test.describe("the demo flow", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");
     await page.waitForLoadState("networkidle");
-    const assistant = page.getByRole("region", { name: "Assistant" });
-    const box = assistant.getByRole("textbox", { name: /message the assistant/i });
+    const assistant = page.getByRole("region", { name: "Aey" });
+    const box = assistant.getByRole("textbox", { name: /message aey/i });
 
     // A link is saved at once. Unique per run: both projects share one database.
     await box.fill(`https://example.com/e2e-${Date.now()}`);

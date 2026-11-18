@@ -243,7 +243,7 @@ export function Assistant({
         text: deck
           ? `Done. ${deck.counts.total} questions on ${what} are ready, and they will come up in your sessions.`
           : "Done. Your questions are ready.",
-        links: [{ label: "Open the deck", href: deck ? `/decks/${deck.id}` : "/decks" }],
+        links: [{ label: "Open the deck", href: deck ? `/decks/${deck.id}` : "/#your-decks" }],
       });
       router.refresh();
     },

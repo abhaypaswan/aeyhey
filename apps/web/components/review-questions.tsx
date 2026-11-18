@@ -62,7 +62,7 @@ export function ReviewQuestions({
   return (
     <Page width="wide">
       <PageHeader
-        back={{ href: "/decks", label: "Decks" }}
+        back={{ href: "/", label: "Home" }}
         eyebrow="Review before scheduling"
         title={deckName}
         subtitle={`${pluralize(questions.length, "question")} written. Drop any that missed, then keep the rest. Only the ones you keep get scheduled.`}

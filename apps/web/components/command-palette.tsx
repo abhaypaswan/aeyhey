@@ -24,13 +24,13 @@ import {
   CommandStatus,
 } from "@ui-sdk/react/command";
 import { Dialog, DialogBackdrop, DialogContent, DialogTitle } from "@ui-sdk/react/dialog";
+import { UserRound } from "lucide-react";
 import { apiClient } from "../lib/client";
 import { OPEN_PALETTE_EVENT } from "./nav";
 import { hostOf, linkTitle } from "../lib/format";
 import {
   Brain,
   Inbox,
-  Layers,
   Link2,
   Play,
   Settings,
@@ -66,7 +66,7 @@ const ACTIONS = [
     group: "Do",
   },
   { value: "inbox", label: "Inbox", icon: Inbox, href: "/inbox", group: "Go to" },
-  { value: "decks", label: "Decks", icon: Layers, href: "/decks", group: "Go to" },
+  { value: "profile", label: "Profile", icon: UserRound, href: "/profile", group: "Go to" },
   { value: "stats", label: "Stats", icon: TrendingUp, href: "/stats", group: "Go to" },
   { value: "settings", label: "Settings", icon: Settings, href: "/settings", group: "Go to" },
   { value: "today", label: "Today", icon: Play, href: "/", group: "Go to" },

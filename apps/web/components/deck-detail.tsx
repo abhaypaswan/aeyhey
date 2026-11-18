@@ -149,7 +149,7 @@ export function DeckDetail({
     setBusy(true);
     try {
       await apiClient.delete(`/api/decks/${deck.id}`);
-      window.location.href = "/decks";
+      window.location.href = "/#your-decks";
     } catch (thrown) {
       setMessage({
         text:
@@ -192,11 +192,11 @@ export function DeckDetail({
     <main className="mx-auto w-full max-w-6xl px-[22px] pb-16 pt-2 sm:px-6 lg:px-8 lg:pt-6">
       <div className="flex items-center justify-between">
         <a
-          href="/decks"
+          href="/#your-decks"
           className="text-foreground hover:bg-quiet -ml-2 flex items-center gap-1.5 rounded-full py-2 pl-2 pr-3 text-sm font-medium transition-colors"
         >
           <ArrowLeft size={20} aria-hidden="true" />
-          <span className="hidden lg:inline">Decks</span>
+          <span className="hidden lg:inline">Home</span>
         </a>
         <Menu>
           <MenuTrigger
