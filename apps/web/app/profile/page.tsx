@@ -9,7 +9,7 @@ import { repos } from "@aeyhey/core";
 import { pageState } from "../../lib/server";
 import { getRuntime } from "../../runtime";
 import { PublicPageSettings } from "../../components/public-page-settings";
-import { OwnerBar } from "../../components/your-page-owner";
+import { OwnerBar } from "../../components/profile-owner";
 import { PublicPageView } from "../u/[handle]/view";
 
 export const dynamic = "force-dynamic";

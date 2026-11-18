@@ -161,7 +161,7 @@ export function DayFeed({
   handle: string;
   initialDays: FeedDay[];
   initialCursor: string | null;
-  /** Where older days come from: the public feed, or the owner's own for Your page. */
+  /** Where older days come from: the public feed, or the owner's own for Your profile. */
   moreFrom?: string;
 }) {
   const [days, setDays] = useState(initialDays);

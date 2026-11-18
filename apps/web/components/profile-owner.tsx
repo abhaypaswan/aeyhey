@@ -1,6 +1,6 @@
 "use client";
 // SPDX-License-Identifier: AGPL-3.0-only
-// What only the owner sees above their page on Your page: the address with the public
+// What only the owner sees above their page on Your profile: the address with the public
 // switch, Edit and View page. Below it the page is drawn as a visitor sees it. Lines from
 // coding sessions go on it by themselves, so there is nothing to review here.
 
@@ -31,7 +31,7 @@ export function OwnerBar({
     try {
       await apiClient.patch("/api/public-page", { enabled: on });
       setEnabled(on);
-      setMessage({ ok: true, text: on ? "Your page is public." : "Your page is hidden." });
+      setMessage({ ok: true, text: on ? "Your profile is public." : "Your profile is hidden." });
     } catch (caught) {
       setMessage({
         ok: false,
@@ -56,15 +56,14 @@ export function OwnerBar({
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="font-display text-[30px] font-[640] leading-[1.1] lg:text-4xl">
-            Your page
-          </h1>
+          <h1 className="font-display text-[30px] font-[640] leading-[1.1] lg:text-4xl">Profile</h1>
           <p className="text-muted-foreground">
-            Below is your page as visitors see it. Edit changes its words, your work and what shows.
+            Below is your profile as visitors see it. Edit changes its words, your work and what
+            shows.
           </p>
         </div>
         <div className="flex gap-2">
-          <LinkButton href="/your-page?edit=1">Edit</LinkButton>
+          <LinkButton href="/profile?edit=1">Edit</LinkButton>
           {enabled ? (
             <LinkButton href={`/u/${handle}`} icon={ExternalLink} external>
               View page

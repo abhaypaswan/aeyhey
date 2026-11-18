@@ -848,7 +848,7 @@ export const HighlightPatchSchema = z
     (body) =>
       body.text !== undefined || body.status !== undefined || body.hiddenFromPage !== undefined,
     {
-      message: "Send new text, a status, or whether it shows on your page.",
+      message: "Send new text, a status, or whether it shows on your profile.",
       path: ["status"],
     },
   );

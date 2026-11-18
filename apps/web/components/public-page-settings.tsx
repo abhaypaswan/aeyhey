@@ -1,6 +1,6 @@
 "use client";
 // SPDX-License-Identifier: AGPL-3.0-only
-// The "Your page" screen (PRD 28). Before the page exists it asks for a name; after, it
+// The "Your profile" screen (PRD 28). Before the page exists it asks for a name; after, it
 // shows the address, the public switch, the page's words and what is on it.
 
 import { useEffect, useRef, useState } from "react";
@@ -179,8 +179,8 @@ function SetUp({ prefix, suggested }: { prefix: string; suggested: string }) {
           }}
         >
           <Field
-            label="Pick a name for your page"
-            hint={check.hint ?? `Your page will be at ${shortPrefix}${handle || "yourname"}`}
+            label="Pick a name for your profile"
+            hint={check.hint ?? `Your profile will be at ${shortPrefix}${handle || "yourname"}`}
             {...(check.error ? { error: check.error } : {})}
           >
             <Input
@@ -199,7 +199,7 @@ function SetUp({ prefix, suggested }: { prefix: string; suggested: string }) {
             disabled={busy || !handle || !check.ok}
             className="self-start"
           >
-            Create my page
+            Create my profile
           </Button>
         </form>
       </Card>
@@ -279,12 +279,12 @@ function YourPage({
   return (
     <Page width="wide">
       <PageHeader
-        back={{ href: "/your-page", label: "Your page" }}
-        title="Edit your page"
+        back={{ href: "/profile", label: "Profile" }}
+        title="Edit your profile"
         subtitle="Its address, its words, your work and what shows on it."
         action={
           <LinkButton href={`/u/${saved.handle}`} icon={ExternalLink} external>
-            View your page
+            View your profile
           </LinkButton>
         }
       />
@@ -320,7 +320,10 @@ function YourPage({
                 checked={saved.enabled}
                 disabled={busy}
                 onCheckedChange={(on) =>
-                  void patch({ enabled: on }, on ? "Your page is public." : "Your page is hidden.")
+                  void patch(
+                    { enabled: on },
+                    on ? "Your profile is public." : "Your profile is hidden.",
+                  )
                 }
               />
             </Card>
@@ -429,10 +432,10 @@ function YourPage({
       >
         <PublicPageWork initial={work} />
 
-        <section className="flex flex-col gap-4" aria-labelledby="on-your-page">
+        <section className="flex flex-col gap-4" aria-labelledby="on-your-profile">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 id="on-your-page" className="text-lg font-bold">
-              On your page
+            <h2 id="on-your-profile" className="text-lg font-bold">
+              On your profile
             </h2>
             {links.length > 0 ? (
               <span className="text-muted-foreground text-sm">
@@ -444,7 +447,7 @@ function YourPage({
             <EmptyState
               icon={BookOpen}
               title="Nothing here yet"
-              body='Open a link you have read and use "Add to my page" to write what you learned from it.'
+              body='Open a link you have read and use "Add to my profile" to write what you learned from it.'
               action={
                 <LinkButton href="/inbox?status=read" tone="secondary">
                   See what you have read

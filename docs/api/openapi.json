@@ -5241,7 +5241,7 @@
     "/public-page/days": {
       "get": {
         "operationId": "getPublicPageDays",
-        "summary": "Your page's day feed as visitors see it, seven days at a time, with link ids.",
+        "summary": "Your profile's day feed as visitors see it, seven days at a time, with link ids.",
         "tags": [
           "public-page"
         ],

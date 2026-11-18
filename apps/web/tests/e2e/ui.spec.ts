@@ -72,7 +72,7 @@ test.describe("settings controls", () => {
     );
 
     await page.keyboard.press("End");
-    await expect(page.getByRole("tab", { name: "Profile" })).toHaveAttribute(
+    await expect(page.getByRole("tab", { name: "Account" })).toHaveAttribute(
       "aria-selected",
       "true",
     );

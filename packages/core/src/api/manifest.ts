@@ -405,7 +405,7 @@ export const API_MANIFEST: readonly ManifestEntry[] = [
   {
     method: "GET",
     path: "/public-page/days",
-    summary: "Your page's day feed as visitors see it, seven days at a time, with link ids.",
+    summary: "Your profile's day feed as visitors see it, seven days at a time, with link ids.",
     tag: "public-page",
     auth: "user",
     query: ["before"],

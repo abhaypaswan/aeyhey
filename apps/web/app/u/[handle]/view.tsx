@@ -3,7 +3,7 @@
 // what about, and what they took from each thing. Laid out for a phone first; on a wide
 // screen the person moves into a column on the left.
 //
-// The public route and the owner's Your page both draw it, so the owner sees exactly what
+// The public route and the owner's Your profile both draw it, so the owner sees exactly what
 // a visitor sees.
 
 import type { ReactNode } from "react";
@@ -355,7 +355,7 @@ export function PublicPageView({
   pageUrl: string;
   /** The owner looking at their own page, which may be hidden: older days come from their feed. */
   owner?: boolean;
-  /** Shown above the page, at its width: the owner's controls on Your page. */
+  /** Shown above the page, at its width: the owner's controls on Your profile. */
   top?: ReactNode;
 }) {
   const stats = page.stats;

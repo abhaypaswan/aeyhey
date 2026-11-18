@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The demo's public page: set up and public, a few read links with what was taken from
 // each, and a week of coding sessions with the lines written from them, which go on the
-// page by themselves. So Your page shows everything it can on a fresh demo.
+// page by themselves. So Your profile shows everything it can on a fresh demo.
 
 import { and, eq } from "drizzle-orm";
 import type { DbHandle } from "../db/client";
@@ -89,7 +89,7 @@ const SEED_HIGHLIGHTS: {
   },
   {
     daysAgo: 0,
-    text: "Your page now shows the page as visitors see it, and Journal is gone.",
+    text: "Your profile now shows the page as visitors see it, and Journal is gone.",
     kind: "progress",
     repo: "aeyhey",
   },

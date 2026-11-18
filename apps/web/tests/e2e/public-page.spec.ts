@@ -46,8 +46,8 @@ test("a takeaway shared in the app shows on the public page and in its feed", as
   await page.goto(`/links/${link.id}`);
   const box = page.getByRole("textbox", { name: "What did you learn?" });
   await box.fill("Write down the one thing worth keeping.");
-  await page.getByRole("button", { name: "Put it on my page" }).click();
-  await expect(page.getByText("On your page.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Put it on my profile" }).click();
+  await expect(page.getByText("On your profile.", { exact: true })).toBeVisible();
 
   await page.goto(`/u/${HANDLE}`);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -70,8 +70,8 @@ test("a takeaway shared in the app shows on the public page and in its feed", as
 
 test("the settings screen shows the page and its address", async ({ page, request }) => {
   await request.patch("/api/public-page", { data: { handle: HANDLE } });
-  await page.goto("/your-page");
-  await expect(page.getByRole("heading", { name: "Your page", level: 1 })).toBeVisible();
+  await page.goto("/profile");
+  await expect(page.getByRole("heading", { name: "Profile", level: 1 })).toBeVisible();
   await expect(page.getByText(`/u/${HANDLE}`).first()).toBeVisible();
   await expect(page.getByRole("switch", { name: "Public" })).toBeVisible();
 });

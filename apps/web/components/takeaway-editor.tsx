@@ -31,11 +31,11 @@ export function TakeawayEditor({
     page.state === "on" ? (
       <>Anyone can see this at {page.url.replace(/^https?:\/\//, "")}.</>
     ) : page.state === "off" ? (
-      <>Your page is hidden, so nobody sees this yet.</>
+      <>Your profile is hidden, so nobody sees this yet.</>
     ) : (
       <>
-        You have not set up your page yet, so nobody sees this.{" "}
-        <a className="text-primary font-semibold underline" href="/your-page">
+        You have not set up your profile yet, so nobody sees this.{" "}
+        <a className="text-primary font-semibold underline" href="/profile">
           Set it up
         </a>
       </>
@@ -48,7 +48,7 @@ export function TakeawayEditor({
       await apiClient.post(`/api/links/${linkId}/share`, { takeaway: text });
       setShared(text.trim());
       setEditing(false);
-      setMessage({ ok: true, text: shared ? "Takeaway saved." : "On your page." });
+      setMessage({ ok: true, text: shared ? "Takeaway saved." : "On your profile." });
     } catch (caught) {
       setMessage({
         ok: false,
@@ -67,7 +67,7 @@ export function TakeawayEditor({
       setShared(null);
       setText(draft);
       setEditing(false);
-      setMessage({ ok: true, text: "Taken off your page." });
+      setMessage({ ok: true, text: "Taken off your profile." });
     } catch (caught) {
       setMessage({
         ok: false,
@@ -83,7 +83,7 @@ export function TakeawayEditor({
   return (
     <div id="takeaway" className="scroll-mt-6">
       <Card className="border-primary/25 bg-primary-soft/30 flex flex-col gap-3">
-        <CardTitle>{shared ? "On your page" : "Add to my page"}</CardTitle>
+        <CardTitle>{shared ? "On your profile" : "Add to my profile"}</CardTitle>
         {showForm ? (
           <form
             className="flex flex-col gap-3"
@@ -104,7 +104,7 @@ export function TakeawayEditor({
             <p className="text-muted-foreground text-xs">{where}</p>
             <div className="flex flex-wrap gap-2">
               <Button type="submit" tone="primary" size="sm" disabled={busy || !text.trim()}>
-                {shared ? "Save takeaway" : "Put it on my page"}
+                {shared ? "Save takeaway" : "Put it on my profile"}
               </Button>
               {shared ? (
                 <Button
@@ -129,7 +129,7 @@ export function TakeawayEditor({
                 Edit
               </Button>
               <Button size="sm" tone="ghost" disabled={busy} onClick={() => void remove()}>
-                Take it off my page
+                Take it off my profile
               </Button>
             </div>
           </>

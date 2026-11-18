@@ -1238,7 +1238,7 @@ export function createApi(deps: ApiDeps) {
     /** The owner's own day feed: what visitors see, with each link's id for editing. */
     ownerPageDays: route(base, async (ctx) => {
       const profile = await findPublicProfile(scope(ctx));
-      if (!profile) return fail(404, "not_found", "Set up your page first.");
+      if (!profile) return fail(404, "not_found", "Set up your profile first.");
       return json(
         await loadPublicDays(scope(ctx), {
           before: ctx.query.get("before"),

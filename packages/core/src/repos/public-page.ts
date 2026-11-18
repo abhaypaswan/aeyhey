@@ -235,7 +235,7 @@ export async function savePublicProfile(
     }
     handle = next;
   }
-  if (!handle) throw new InvalidHandleError("Pick a name for your page first.");
+  if (!handle) throw new InvalidHandleError("Pick a name for your profile first.");
 
   const clean = (value: string | null | undefined) =>
     value === undefined ? undefined : value === null ? null : value.trim() || null;
@@ -303,7 +303,7 @@ export class NotReadYetError extends Error {
   override readonly name = "not_read";
   readonly status = 409;
   constructor() {
-    super("Mark this link as read before you put it on your page.");
+    super("Mark this link as read before you put it on your profile.");
   }
 }
 

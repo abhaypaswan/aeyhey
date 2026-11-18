@@ -152,7 +152,7 @@ export function PublicPageWork({ initial }: { initial: WorkSide }) {
             tech: project.tech ?? [],
           })),
       });
-      setMessage({ ok: true, text: "Saved. It shows on your page now." });
+      setMessage({ ok: true, text: "Saved. It shows on your profile now." });
     } catch (caught) {
       const text =
         caught instanceof ApiRequestError

@@ -3,7 +3,7 @@
 // Everything about you, behind your picture at the right of the top bar.
 //
 // The phone app keeps the same things in a sheet: who you are, when the next reminder
-// comes (with Pause right there), then Stats, Journal, Your page and Settings. On a wide
+// comes (with Pause right there), then Stats and Settings. On a wide
 // screen it opens as a panel under the picture; on a small touch screen UI SDK turns the
 // same popover into a sheet, so a phone browser gets what the app gives.
 
@@ -17,7 +17,6 @@ import {
   LogOut,
   Pencil,
   SlidersHorizontal,
-  BookOpenCheck,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@ui-sdk/react/avatar";
 import { Button } from "@ui-sdk/react/button";
@@ -107,12 +106,6 @@ export function AccountMenu({ data }: { data: ShellData }) {
       label: "Stats",
       detail: "Your week, your accuracy, your streak",
       icon: ChartLine,
-    },
-    {
-      href: "/your-page",
-      label: "Your page",
-      detail: "What you learned and built, on a page you can share",
-      icon: BookOpenCheck,
     },
     ...(data.extraNav ?? []).map((item) => ({
       href: item.href,

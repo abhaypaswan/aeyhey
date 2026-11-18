@@ -57,14 +57,14 @@ const TABS = [
   { id: "agents", label: "Agents" },
   { id: "appearance", label: "Appearance" },
   { id: "data", label: "Data" },
-  { id: "profile", label: "Profile" },
+  { id: "profile", label: "Account" },
 ] as const;
 
 /** One paragraph beside each tab, saying what the settings in it are for. */
 const HELP: Record<(typeof TABS)[number]["id"], { title: string; body: string }> = {
   profile: {
-    title: "About your profile",
-    body: "Your name and picture show in Aeyhey and on your public page, if you have one. The picture is cropped to a square before it is sent.",
+    title: "About your account",
+    body: "Your name and picture show in Aeyhey and on your profile, if you have one. The picture is cropped to a square before it is sent.",
   },
   schedule: {
     title: "About the schedule",
@@ -84,7 +84,7 @@ const HELP: Record<(typeof TABS)[number]["id"], { title: string; body: string }>
   },
   agents: {
     title: "About agents",
-    body: "Coding agents such as Claude Code report each finished session to Aeyhey. Once a day is over, Aeyhey drafts a few highlights for your Journal, and you keep what matters. Nothing is shared unless you choose to.",
+    body: "Coding agents such as Claude Code report each finished session to Aeyhey. Once a day is over, Aeyhey writes a short summary of what you built. It shows on your profile only if you turn that on; the session logs themselves never show.",
   },
   appearance: {
     title: "About appearance",
@@ -239,12 +239,12 @@ export function SettingsView({
             </Card>
             {/* The phone's bottom bar has no room for it, so it is reachable from here. */}
             <Card className="flex flex-col gap-2">
-              <CardTitle>Your page</CardTitle>
+              <CardTitle>Profile</CardTitle>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                A public page of what you learned from what you read.
+                Your public page: what you learned from what you read, and what you built.
               </p>
-              <a href="/your-page" className="text-primary text-sm font-semibold underline">
-                Open your page settings
+              <a href="/profile" className="text-primary text-sm font-semibold underline">
+                Open your profile
               </a>
             </Card>
           </>
