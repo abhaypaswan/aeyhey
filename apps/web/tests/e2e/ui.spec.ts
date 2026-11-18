@@ -30,6 +30,10 @@ test.describe("the command palette", () => {
     // aey takes anything typed, so it stays, carrying the text.
     await expect(page.getByRole("option", { name: /ask aey.*map/i })).toBeVisible();
 
+    // Commands are found by what people call them, not only by their label.
+    await input.fill("codex");
+    await expect(page.getByRole("option", { name: /connect a coding agent/i })).toBeVisible();
+
     // Escape clears the query first and closes only once there is nothing to clear,
     // which is what a palette with a search field in it should do.
     await page.keyboard.press("Escape");

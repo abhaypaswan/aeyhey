@@ -29,7 +29,7 @@ import { House, Map as MapIcon, UserRound } from "lucide-react";
 import { apiClient } from "../lib/client";
 import { OPEN_PALETTE_EVENT } from "./nav";
 import { hostOf, linkTitle } from "../lib/format";
-import { Inbox, Play, Settings, Sparkles, TrendingUp, contentTypeIcon } from "./icons";
+import { Bot, Inbox, Play, Settings, Sparkles, TrendingUp, contentTypeIcon } from "./icons";
 
 interface LinkHit {
   id: string;
@@ -46,6 +46,15 @@ const ASK = "ask";
 /** Everything the palette can do, besides asking aey or opening one of your own links. */
 const ACTIONS = [
   { value: "session", label: "Start a session", icon: Play, href: "/session", group: "Do" },
+  {
+    value: "agents",
+    label: "Connect a coding agent",
+    icon: Bot,
+    href: "/settings?tab=agents",
+    group: "Do",
+    // Found by what people call it, not only by this label.
+    keywords: "claude code codex cursor mcp agent",
+  },
   { value: "home", label: "Home", icon: House, href: "/", group: "Go to" },
   { value: "inbox", label: "Inbox", icon: Inbox, href: "/inbox", group: "Go to" },
   { value: "profile", label: "Profile", icon: UserRound, href: "/profile", group: "Go to" },
@@ -53,6 +62,13 @@ const ACTIONS = [
   { value: "stats", label: "Stats", icon: TrendingUp, href: "/stats", group: "Go to" },
   { value: "settings", label: "Settings", icon: Settings, href: "/settings", group: "Go to" },
 ] as const;
+
+/** The label plus any other words an action should be found by. */
+function searchableText(value: string, label: string): string {
+  const action = ACTIONS.find((candidate) => candidate.value === value);
+  const keywords = action && "keywords" in action ? action.keywords : "";
+  return `${label} ${keywords}`.toLowerCase();
+}
 
 export function CommandPalette() {
   const router = useRouter();
@@ -181,9 +197,9 @@ export function CommandPalette() {
           filter={(item, text) =>
             item.value === ASK ||
             String(item.value).startsWith("link:") ||
-            String(item.label ?? "")
-              .toLowerCase()
-              .includes(text.toLowerCase())
+            searchableText(String(item.value), String(item.label ?? "")).includes(
+              text.toLowerCase(),
+            )
           }
         >
           <CommandInput
@@ -200,6 +216,16 @@ export function CommandPalette() {
             {groups.map((group) => (
               <CommandGroup key={group}>
                 <CommandGroupLabel>{group}</CommandGroupLabel>
+                {ACTIONS.filter((action) => action.group === group).map((action) => (
+                  <CommandItem key={action.value} value={action.value} label={action.label}>
+                    <CommandItemIcon>
+                      <action.icon size={15} />
+                    </CommandItemIcon>
+                    {action.label}
+                  </CommandItem>
+                ))}
+                {/* Last in Do, so a command your words match is picked first; with no
+                    match it is the only thing left there, so it comes first anyway. */}
                 {group === "Do" ? (
                   <CommandItem value={ASK} label="Ask aey">
                     <CommandItemIcon>
@@ -214,14 +240,6 @@ export function CommandPalette() {
                     )}
                   </CommandItem>
                 ) : null}
-                {ACTIONS.filter((action) => action.group === group).map((action) => (
-                  <CommandItem key={action.value} value={action.value} label={action.label}>
-                    <CommandItemIcon>
-                      <action.icon size={15} />
-                    </CommandItemIcon>
-                    {action.label}
-                  </CommandItem>
-                ))}
               </CommandGroup>
             ))}
 
