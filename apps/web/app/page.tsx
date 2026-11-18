@@ -32,7 +32,6 @@ import { strong } from "../lib/hue";
 
 export const dynamic = "force-dynamic";
 
-const MAP_MIN_ITEMS = 6;
 const DECKS_SHOWN = 6;
 
 export default async function HomePage({
@@ -337,13 +336,9 @@ export default async function HomePage({
       </div>
 
       {/* Everything you keep, as one picture: on a wide screen, where there is room for it. */}
-      {/* With only a handful of things the map is a few dots in an empty box, so it waits
-          until there is something to draw. */}
-      {map.items.length < MAP_MIN_ITEMS ? null : (
-        <div className="mt-14 hidden lg:block">
-          <KnowledgeMap data={map} embedded />
-        </div>
-      )}
+      <div className="mt-14 hidden lg:block">
+        <KnowledgeMap data={map} embedded />
+      </div>
     </main>
   );
 }

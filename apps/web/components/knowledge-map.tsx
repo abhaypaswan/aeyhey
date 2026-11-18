@@ -317,7 +317,19 @@ export function KnowledgeMap({
   }
 
   if (data.items.length === 0) {
-    if (embedded) return null;
+    if (embedded) {
+      return (
+        <section
+          aria-label="Your map"
+          className="map-canvas flex h-56 items-center justify-center rounded-[22px] px-6"
+        >
+          <p className="text-muted-foreground max-w-md text-center text-[15px] leading-[1.45]">
+            Your map starts here. Save a link or make a deck, and it shows up, grouped by subject,
+            with lines wherever your reading and your questions meet.
+          </p>
+        </section>
+      );
+    }
     return (
       <main className="mx-auto w-full max-w-6xl px-[22px] pb-16 pt-8 sm:px-6 lg:px-8">
         <h1 className="font-display text-[30px] font-[640] leading-[1.1] lg:text-4xl">Map</h1>
