@@ -10,7 +10,7 @@
 
 import { redirect } from "next/navigation";
 import { repos, sessions } from "@aeyhey/core";
-import { Bell, BellOff, ChevronRight, Play } from "lucide-react";
+import { Bell, BellOff, ChevronRight, Layers, Link2, Play } from "lucide-react";
 import { pageState } from "../lib/server";
 import { LinkButton, cx } from "../components/ui";
 import {
@@ -57,15 +57,23 @@ export default async function HomePage() {
     timeZone: today.timezone,
   }).format(now);
 
+  // Only the kinds that are waiting: "3 questions", not "0 links and 3 questions".
+  const waitingParts = [
+    today.due.links > 0 ? pluralize(today.due.links, "link") : null,
+    today.due.questions > 0 ? pluralize(today.due.questions, "question") : null,
+  ].filter(Boolean);
+  const waitingNow = waitingParts.join(" and ");
+  const waitingCount = today.due.links + today.due.questions;
+
   const title = due
     ? `${pluralize(today.sessionSize, "card")} ready`
     : nothingSaved
-      ? "Start with a link"
+      ? "What do you want to remember?"
       : "All caught up";
   const body = due
-    ? `${pluralize(today.due.links, "link")} and ${pluralize(today.due.questions, "question")} are waiting. About ${pluralize(minutes, "minute")}, one card at a time.`
+    ? `${waitingNow} ${waitingCount === 1 ? "is" : "are"} waiting. About ${pluralize(minutes, "minute")}, one card at a time.`
     : nothingSaved
-      ? "Paste any link. Aeyhey reads it, sums it up, and brings it back when you are likely to forget it."
+      ? "A link you meant to read, a topic you are learning, a book, your notes or your resume. Aeyhey turns it into a few cards at a time, and keeps bringing each one back until you have it."
       : paused
         ? "Reminders are paused. You can still do a few cards."
         : `Nothing is due. Next session ${nextSession}.`;
@@ -117,9 +125,7 @@ export default async function HomePage() {
                 />
               </div>
             )}
-            {nothingSaved ? (
-              <ReminderLine paused={paused} nextSession={nextSession} className="mt-3.5" />
-            ) : null}
+            {nothingSaved ? <StartChoices /> : null}
 
             {journalDrafts > 0 ? (
               <a
@@ -314,5 +320,58 @@ function ShelfItem({
     </a>
   ) : (
     <div className={shared}>{inner}</div>
+  );
+}
+
+/**
+ * A first visit's two ways in. Links were where Aeyhey started, and a deck of questions
+ * is the other half: from topics, a book, notes, a syllabus or a resume.
+ */
+function StartChoices() {
+  const choices = [
+    {
+      href: "/add",
+      icon: Link2,
+      title: "Save links",
+      body: "Paste the articles, videos and threads you meant to get back to. Each gets a short summary.",
+      cta: "Add links",
+    },
+    {
+      href: "/decks/new",
+      icon: Layers,
+      title: "Make a deck",
+      body: "From a few topics, a book or your notes, a syllabus or your resume. Aeyhey writes questions with worked answers.",
+      cta: "New deck",
+    },
+  ];
+  return (
+    <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:mt-8 lg:gap-4">
+      {choices.map((choice, index) => (
+        <a
+          key={choice.href}
+          href={choice.href}
+          className="start-choice group flex flex-col gap-2 rounded-[22px] p-5 transition-colors"
+        >
+          <span
+            className={cx(
+              "grid size-10 place-items-center rounded-full",
+              index === 0 ? "bg-primary text-primary-foreground" : "bg-primary-soft text-primary",
+            )}
+          >
+            <choice.icon size={19} aria-hidden="true" />
+          </span>
+          <span className="font-display mt-1 text-xl font-semibold">{choice.title}</span>
+          <span className="text-muted-foreground text-[14.5px] leading-[1.45]">{choice.body}</span>
+          <span className="text-primary mt-auto flex items-center gap-1 pt-2 text-sm font-semibold">
+            {choice.cta}
+            <ChevronRight
+              size={16}
+              aria-hidden="true"
+              className="transition-transform group-hover:translate-x-0.5"
+            />
+          </span>
+        </a>
+      ))}
+    </div>
   );
 }

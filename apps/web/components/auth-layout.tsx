@@ -34,11 +34,11 @@ export function AuthLayout({
         <div className="flex max-w-xl flex-col gap-8">
           <div className="flex flex-col gap-3">
             <p className="font-display text-[44px] font-semibold leading-[1.08] tracking-[-0.018em]">
-              Stop hoarding links. Start remembering them.
+              Learn anything, and keep it.
             </p>
             <p className="text-muted-foreground text-lg">
-              Your saved links and your interview prep, brought back at the right time, one card at
-              a time.
+              Save links, add topics, upload a book, your notes or your resume. Aeyhey turns them
+              into short sessions and brings each thing back until you have mastered it.
             </p>
           </div>
 

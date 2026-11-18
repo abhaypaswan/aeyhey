@@ -39,7 +39,8 @@ const signika = localFont({
 
 export const metadata: Metadata = {
   title: "Aeyhey",
-  description: "Your saved links and your interview prep, brought back at the right time.",
+  description:
+    "Links, topics, books, notes and your resume, turned into short sessions that bring each thing back until you have it.",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Aeyhey", statusBarStyle: "black-translucent" },
 };

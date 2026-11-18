@@ -1,11 +1,12 @@
 "use client";
 // SPDX-License-Identifier: AGPL-3.0-only
-// "Paste a link to save it", as on the phone's Home.
+// Home's one box: a link is saved, anything else is the start of a question deck.
 //
 // On a phone it floats at the bottom of Home, over a fade, where the thumb is. On a wide
 // screen there is no thumb to serve, so it sits in the page beside the session instead.
-// Text that is not a link is offered as the start of a question deck, the same as the
-// app does.
+// Text that is not a link (a topic, a few of them, a chapter) goes straight to New deck
+// with the text already in its box, since learning a topic is as much what Aeyhey is for
+// as keeping links.
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -29,9 +30,7 @@ export function PasteBox() {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ text: string; deck?: string; error?: boolean } | null>(
-    null,
-  );
+  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
   async function paste(): Promise<void> {
     try {
@@ -49,7 +48,7 @@ export function PasteBox() {
     const text = value.trim();
     if (text === "" || busy) return;
     if (!LINK.test(text)) {
-      setMessage({ text: "That is not a link. Make a deck about it?", deck: text });
+      makeDeck(text);
       return;
     }
     setBusy(true);
@@ -106,15 +105,6 @@ export function PasteBox() {
             )}
           >
             {message.text}
-            {message.deck ? (
-              <Button
-                disabled={busy}
-                onClick={() => makeDeck(message.deck ?? "")}
-                className="text-primary font-semibold"
-              >
-                Make a deck
-              </Button>
-            ) : null}
           </p>
         ) : null}
         <form
@@ -125,7 +115,7 @@ export function PasteBox() {
           }}
         >
           <label className="sr-only" htmlFor="paste-box">
-            Paste a link to save it
+            Paste a link, or type a topic to learn
           </label>
           <textarea
             id="paste-box"
@@ -141,7 +131,7 @@ export function PasteBox() {
                 void save();
               }
             }}
-            placeholder="Paste a link to save it"
+            placeholder="Paste a link, or type a topic to learn"
             autoCapitalize="off"
             autoCorrect="off"
             spellCheck={false}
