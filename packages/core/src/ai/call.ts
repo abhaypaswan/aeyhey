@@ -37,6 +37,8 @@ const CONTRACT_TASK: Record<ContractName, AITask> = {
   // Reading a message and answering from a few saved pieces: short, summary-sized work.
   assistant_intent: "summary",
   library_answer: "summary",
+  // A chat answer: one call per message, sized like a short summary.
+  assistant_turn: "summary",
 };
 
 export interface AiCallDeps {

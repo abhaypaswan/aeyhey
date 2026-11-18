@@ -251,6 +251,34 @@ export const LibraryAnswerSchema = z.object({
 
 export type LibraryAnswerOutput = z.infer<typeof LibraryAnswerSchema>;
 
+/**
+ * One turn of the assistant when a model is there: a real answer to whatever was asked,
+ * from the model's own knowledge, the person's library and the app's own facts, plus
+ * what the app could do about it. The model never acts itself: the app reads deck.
+ */
+export const AssistantTurnSchema = z.object({
+  /** The answer, as plain text with simple formatting: paragraphs, lists, code fences. */
+  reply: z
+    .string()
+    .max(16_000)
+    .transform((s) => clampWords(s.trim(), 10_000))
+    .refine((s) => s.length > 0, "This cannot be empty."),
+  /**
+   * propose: they asked for a deck, flashcards or questions to keep, so show the deck
+   * settings. offer: the answer is about something worth practising, so offer a deck
+   * as a button. none: small talk, questions about the app, or nothing to practise.
+   */
+  deck: z.enum(["none", "offer", "propose"]).default("none"),
+  /** For offer and propose: the topics, as short names. */
+  topics: z.array(tidy(80)).max(10).default([]),
+  level: z.enum(["beginner", "intermediate", "advanced"]).nullable().default(null),
+  style: z.enum(["study", "interview", "mixed"]).nullable().default(null),
+  /** The ids of the library pieces the answer used, from the ones given. */
+  cited: z.array(z.string().max(80)).max(8).default([]),
+});
+
+export type AssistantTurnOutput = z.infer<typeof AssistantTurnSchema>;
+
 export const CONTRACTS = {
   link_summary: LinkSummarySchema,
   resume_profile: ResumeProfileSchema,
@@ -260,6 +288,7 @@ export const CONTRACTS = {
   agent_digest: AgentDigestSchema,
   assistant_intent: AssistantIntentSchema,
   library_answer: LibraryAnswerSchema,
+  assistant_turn: AssistantTurnSchema,
 } as const;
 
 export type ContractName = keyof typeof CONTRACTS;
@@ -277,4 +306,5 @@ export const TOKEN_BUDGETS: Record<
   agent_digest: { maxOutputTokens: 1_400, timeoutMs: 30_000, ollamaTimeoutMs: 90_000 },
   assistant_intent: { maxOutputTokens: 500, timeoutMs: 20_000, ollamaTimeoutMs: 60_000 },
   library_answer: { maxOutputTokens: 1_200, timeoutMs: 30_000, ollamaTimeoutMs: 90_000 },
+  assistant_turn: { maxOutputTokens: 2_500, timeoutMs: 60_000, ollamaTimeoutMs: 180_000 },
 };

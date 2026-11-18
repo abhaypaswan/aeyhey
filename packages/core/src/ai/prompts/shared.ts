@@ -16,6 +16,7 @@ export type UntrustedKind =
   | "request"
   | "work"
   | "message"
+  | "history"
   | "library";
 
 /**

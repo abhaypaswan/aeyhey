@@ -138,15 +138,35 @@ describe("the assistant on the demo library", () => {
   });
 
   it("says so when nothing saved answers it, and offers a deck", async () => {
-    const reply = await respond(scope, deps(mockKeys), {
+    // With a model it answers and offers a deck; with none the rules say nothing matched.
+    const chatted = await respond(scope, deps(mockKeys), {
       message: "What did I save about medieval tapestry?",
     });
-    expect(reply.answer?.found).toBe(false);
-    expect(reply.options?.[0]?.force).toBe("make_deck");
+    expect(chatted.answer).toBeUndefined();
+    expect(chatted.options?.[0]?.force).toBe("make_deck");
+
+    const ruled = await respond(scope, deps(noKeys), {
+      message: "What did I save about medieval tapestry?",
+    });
+    expect(ruled.answer?.found).toBe(false);
+    expect(ruled.options?.[0]?.force).toBe("make_deck");
   });
 
-  it("asks which was meant, and a button settles it", async () => {
-    const asked = await respond(scope, deps(mockKeys), { message: "postgres" });
+  it("answers anything with a model, and turns a request for questions into a deck", async () => {
+    const asked = await respond(scope, deps(mockKeys), {
+      message: "can you write reverse binary tree question?",
+    });
+    expect(asked.intent).toBe("make_deck");
+    expect(asked.proposal?.topics).toEqual(["reverse binary tree"]);
+
+    // A library answer from the chat cites only pieces it was given.
+    const kafka = await respond(scope, deps(mockKeys), { message: "What did I save about Kafka?" });
+    expect(kafka.answer?.sources.length).toBeGreaterThan(0);
+    expect(kafka.answer?.sources.every((source) => /^(link|question):/.test(source.id))).toBe(true);
+  });
+
+  it("asks which was meant with no model, and a button settles it", async () => {
+    const asked = await respond(scope, deps(noKeys), { message: "postgres" });
     expect(asked.intent).toBe("unclear");
     expect(asked.options?.map((option) => option.force)).toEqual(["make_deck", "ask"]);
 
@@ -171,14 +191,12 @@ describe("the assistant on the demo library", () => {
   it("answers questions about Aeyhey itself from its own help, with or without a model", async () => {
     for (const keys of [mockKeys, noKeys]) {
       const deck = await respond(scope, deps(keys), { message: "what is deck?" });
-      expect(deck.intent).toBe("help");
       expect(deck.reply).toMatch(/A deck is a set of practice questions/);
       expect(deck.options).toBeUndefined();
 
       const app = await respond(scope, deps(keys), {
         message: "what aeyhey can do? what is its purpose?",
       });
-      expect(app.intent).toBe("help");
       expect(app.reply).toMatch(/Aeyhey helps you remember/);
     }
   });

@@ -2,21 +2,25 @@
 // The assistant: one message in, the right thing done, and a reply.
 //
 // Every way of adding to Aeyhey or asking about it goes through here. Links are saved at
-// once, since a link is never ambiguous. A deck is proposed first, with its topics, level
-// and purpose, so nothing is written (and nothing is spent) until the person agrees. A
-// question is answered from their own library, with the pieces it used, and a question
-// about Aeyhey itself from the app's own help (help.ts). When a message
-// could mean more than one thing, the reply asks, with a button for each reading.
+// once, since a link is never ambiguous.
 //
-// The rules in rules.ts settle the easy cases without a model. A model is asked only when
-// they are unsure, and if there is no model, or it fails, the rules' reading stands, so
-// the assistant still works on an instance with no AI set up.
+// Everything else goes to a model when there is one, as a chat: it answers whatever was
+// asked from its own knowledge, with the pieces of their library and the facts about the
+// app that bear on it, and says whether a deck is worth proposing or offering. A deck is
+// still only proposed, never written, until the person agrees.
+//
+// With no model, or when the call fails, the rules in rules.ts take over: a request for
+// questions becomes a deck proposal, a question is answered from the library or the
+// app's help, and a message that could mean more than one thing gets a button for each
+// reading. So the assistant still works on an instance with no AI set up.
 
 import { callAi, type AiCallDeps } from "../ai/call";
 import {
   ASSISTANT_INTENT_SYSTEM,
   LIBRARY_ANSWER_SYSTEM,
+  assistantTurnSystem,
   buildAssistantIntentPrompt,
+  buildAssistantTurnPrompt,
   buildLibraryAnswerPrompt,
 } from "../ai/prompts/index";
 import type { AssistantIntentOutput } from "../ai/contracts/index";
@@ -201,6 +205,98 @@ async function answerFromLibrary(
   }
 }
 
+const PROGRESS = /\b(weak|strong|struggl|progress|doing|score|worst|best)\w*/i;
+
+function deckLabel(topics: string[]): string {
+  return topics.length === 1
+    ? topics[0]!
+    : `${topics.slice(0, -1).join(", ")} and ${topics.at(-1)}`;
+}
+
+/**
+ * One chat turn with a model. Null when there is no model or the call failed, so the
+ * rules can answer instead.
+ */
+async function chat(
+  scope: Scope,
+  deps: AssistantDeps,
+  input: AssistantInput,
+): Promise<AssistantReply | null> {
+  const message = input.message.trim();
+  const hits = await searchLibrary(scope, message, 6);
+  const weakTopics = PROGRESS.test(message)
+    ? [...(await loadStats(scope)).scoreByTag]
+        .sort((a, b) => a.averageScore - b.averageScore)
+        .slice(0, 6)
+        .map((row) => ({ tag: row.tag, averageScore: row.averageScore }))
+    : [];
+  let turn;
+  try {
+    turn = (
+      await callAi(deps.ai, {
+        contract: "assistant_turn",
+        userId: scope.userId,
+        system: assistantTurnSystem(HELP_ARTICLES),
+        prompt: buildAssistantTurnPrompt({
+          message,
+          ...(input.history ? { history: input.history } : {}),
+          pieces: hits.map((hit) => ({
+            id: hit.id,
+            kind: hit.kind,
+            title: hit.title,
+            text: hit.text,
+            tags: hit.tags,
+          })),
+          ...(weakTopics.length > 0 ? { weakTopics } : {}),
+        }),
+      })
+    ).object;
+  } catch (error) {
+    log.info("no model for the chat turn, using the rules", {
+      reason: error instanceof Error ? error.name : "unknown",
+    });
+    return null;
+  }
+
+  const cited = new Set(turn.cited);
+  const sources = hits
+    .filter((hit) => cited.has(hit.id))
+    .map((hit) => ({ id: hit.id, kind: hit.kind, title: hit.title, href: hit.href }));
+  const topics = [...new Set(turn.topics.map((topic) => topic.trim()).filter(Boolean))].slice(
+    0,
+    10,
+  );
+
+  if (turn.deck === "propose" && topics.length > 0) {
+    return {
+      intent: "make_deck",
+      reply: turn.reply,
+      proposal: {
+        topics,
+        level: turn.level ?? "intermediate",
+        style: turn.style ?? "study",
+        countPerTopic: 5,
+      },
+    };
+  }
+  return {
+    intent: "ask",
+    reply: turn.reply,
+    ...(sources.length > 0 ? { answer: { found: true, sources } } : {}),
+    ...(turn.deck !== "none" && topics.length > 0
+      ? {
+          options: [
+            {
+              label: `Make a deck on ${deckLabel(topics.slice(0, 3))}`,
+              message: topics.join(", "),
+              force: "make_deck" as const,
+            },
+          ],
+        }
+      : {}),
+  };
+}
+
 /** An answer about Aeyhey itself, from its own help. */
 function helpReply(message: string): AssistantReply {
   const article = findHelp(message) ?? HELP_ARTICLES[0]!;
@@ -212,8 +308,14 @@ export async function respond(
   deps: AssistantDeps,
   input: AssistantInput,
 ): Promise<AssistantReply> {
-  const reading = await understand(scope, deps, input);
   const message = input.message.trim();
+  // A link is saved without asking anyone: that is never in doubt, and it costs nothing.
+  if (!input.force && readMessage(message).intent !== "save_links") {
+    const answered = await chat(scope, deps, input);
+    if (answered) return answered;
+  }
+
+  const reading = await understand(scope, deps, input);
 
   switch (reading.intent) {
     case "save_links": {

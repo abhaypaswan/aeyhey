@@ -21,7 +21,8 @@ const STOP = new Set(
     "it its this that these those i me my we our you your they them what which who how why " +
     "when where do does did can could should would will have has had any some all saved save " +
     "read reading learn learning tell show find list explain quiz about know thing things " +
-    "anything something did i've ive have there their please give me more"
+    "anything something did i've ive have there their please give me more " +
+    "simply simple briefly quickly short detail detailed like"
   ).split(" "),
 );
 

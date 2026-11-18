@@ -11,6 +11,7 @@
 
 import type { ContractName } from "./contracts/index";
 import { readMessage } from "../assistant/rules";
+import { findHelp, HELP_ARTICLES } from "../assistant/help";
 import type { GradeAnswerOutput, LinkSummary } from "./contracts/index";
 
 export const MOCK_MODEL_ID = "aeyhey-mock" as const;
@@ -448,6 +449,8 @@ export function mockObjectFor(contract: ContractName, prompt: string): unknown {
       return mockAssistantIntent(prompt);
     case "library_answer":
       return mockLibraryAnswer(prompt);
+    case "assistant_turn":
+      return mockAssistantTurn(prompt);
   }
 }
 
@@ -493,6 +496,46 @@ function mockLibraryAnswer(prompt: string): unknown {
     }`,
     cited: pieces.map((piece) => piece.id),
     found: true,
+  };
+}
+
+/**
+ * A chat turn without a model: the rules' reading, said the way a model would. Requests
+ * for questions become a deck proposal, questions about the app get the app's help,
+ * library questions get the library answer, and anything else says plainly that demo
+ * mode can only answer from what was saved, and offers a deck.
+ */
+function mockAssistantTurn(prompt: string): unknown {
+  const message = tagged(prompt, "message");
+  const reading = readMessage(message);
+  const base = { level: reading.level, style: reading.style, cited: [] as string[] };
+  if (reading.intent === "make_deck" && reading.topics.length > 0) {
+    return {
+      ...base,
+      reply: `I can make a deck on ${reading.topics.length === 1 ? reading.topics[0] : `${reading.topics.length} topics`}. Check the settings and I will write the questions.`,
+      deck: "propose",
+      topics: reading.topics,
+    };
+  }
+  if (reading.intent === "help") {
+    return {
+      ...base,
+      reply: (findHelp(message) ?? HELP_ARTICLES[0]!).answer,
+      deck: "none",
+      topics: [],
+    };
+  }
+  const library = mockLibraryAnswer(prompt) as { answer: string; cited: string[]; found: boolean };
+  if (library.found) {
+    return { ...base, reply: library.answer, deck: "none", topics: [], cited: library.cited };
+  }
+  const topic = (reading.query || message).slice(0, 80);
+  return {
+    ...base,
+    reply:
+      "Demo mode has no AI model, so I can only answer from what you have saved, and nothing you saved covers that yet.",
+    deck: "offer",
+    topics: [topic],
   };
 }
 

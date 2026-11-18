@@ -635,38 +635,112 @@ export function Assistant({
   );
 }
 
-/**
- * A reply, with its short lists drawn as lists. Answers are plain text: paragraphs, and
- * lines starting with "- " for a list. Nothing else is read as formatting.
- */
-function ReplyText({ text, error }: { text: string; error?: boolean | undefined }) {
-  const blocks: ({ kind: "p"; text: string } | { kind: "ul"; items: string[] })[] = [];
-  for (const raw of text.split("\n")) {
+/** **bold** and `code` inside a line. Everything else is text, never HTML. */
+function Inline({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).filter(Boolean);
+  return (
+    <>
+      {parts.map((part, index) =>
+        part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (
+          <strong key={index} className="font-semibold">
+            {part.slice(2, -2)}
+          </strong>
+        ) : part.startsWith("`") && part.endsWith("`") && part.length > 2 ? (
+          <code key={index} className="bg-quiet rounded px-1 py-0.5 font-mono text-[0.9em]">
+            {part.slice(1, -1)}
+          </code>
+        ) : (
+          <span key={index}>{part}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+type Block =
+  | { kind: "p"; text: string }
+  | { kind: "ul" | "ol"; items: string[] }
+  | { kind: "code"; text: string };
+
+/** Splits a reply into paragraphs, lists and code blocks. */
+function blocksOf(text: string): Block[] {
+  const blocks: Block[] = [];
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i += 1) {
+    const raw = lines[i]!;
+    if (/^\s*```/.test(raw)) {
+      const code: string[] = [];
+      i += 1;
+      while (i < lines.length && !/^\s*```/.test(lines[i]!)) {
+        code.push(lines[i]!);
+        i += 1;
+      }
+      blocks.push({ kind: "code", text: code.join("\n") });
+      continue;
+    }
     const line = raw.trim();
     if (!line) continue;
-    const item = /^[-*\u2022]\s+(.*)$/.exec(line);
+    const bullet = /^[-*\u2022]\s+(.*)$/.exec(line);
+    const numbered = /^\d+[.)]\s+(.*)$/.exec(line);
     const last = blocks.at(-1);
-    if (item) {
-      if (last?.kind === "ul") last.items.push(item[1]!);
-      else blocks.push({ kind: "ul", items: [item[1]!] });
+    if (bullet || numbered) {
+      const kind = bullet ? "ul" : "ol";
+      const item = (bullet ?? numbered)![1]!;
+      if (last && last.kind === kind) last.items.push(item);
+      else blocks.push({ kind, items: [item] });
     } else {
-      blocks.push({ kind: "p", text: line });
+      blocks.push({ kind: "p", text: line.replace(/^#+\s+/, "") });
     }
   }
+  return blocks;
+}
+
+/**
+ * A reply as written by the model or the rules: paragraphs, "- " and "1. " lists, code
+ * fences, **bold** and `code`. Nothing is read as HTML.
+ */
+function ReplyText({ text, error }: { text: string; error?: boolean | undefined }) {
   return (
-    <div className={cx("flex flex-col gap-2 text-[14.5px] leading-[1.5]", error && "text-danger")}>
-      {blocks.map((block, index) =>
+    <div
+      className={cx(
+        "flex min-w-0 flex-col gap-2 text-[14.5px] leading-[1.55]",
+        error && "text-danger",
+      )}
+    >
+      {blocksOf(text).map((block, index) =>
         block.kind === "p" ? (
-          <p key={index}>{block.text}</p>
-        ) : (
+          <p key={index}>
+            <Inline text={block.text} />
+          </p>
+        ) : block.kind === "code" ? (
+          <pre
+            key={index}
+            className="bg-canvas border-border overflow-x-auto rounded-xl border px-3 py-2.5 font-mono text-[13px] leading-[1.5]"
+          >
+            <code>{block.text}</code>
+          </pre>
+        ) : block.kind === "ul" ? (
           <ul
             key={index}
             className="marker:text-subtle-foreground flex list-disc flex-col gap-1 pl-5"
           >
             {block.items.map((entry, i) => (
-              <li key={i}>{entry}</li>
+              <li key={i}>
+                <Inline text={entry} />
+              </li>
             ))}
           </ul>
+        ) : (
+          <ol
+            key={index}
+            className="marker:text-subtle-foreground flex list-decimal flex-col gap-1 pl-5"
+          >
+            {block.items.map((entry, i) => (
+              <li key={i}>
+                <Inline text={entry} />
+              </li>
+            ))}
+          </ol>
         ),
       )}
     </div>
@@ -695,7 +769,7 @@ function AssistantMessage({
   const open = !message.settled && !message.working;
 
   return (
-    <div className="flex max-w-[94%] flex-col gap-2">
+    <div className="flex min-w-0 max-w-[94%] flex-col gap-2">
       {message.text ? <ReplyText text={message.text} error={message.error} /> : null}
 
       {proposal ? (
