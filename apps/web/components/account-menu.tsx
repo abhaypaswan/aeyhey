@@ -15,7 +15,6 @@ import {
   ChartLine,
   ChevronRight,
   LogOut,
-  NotebookPen,
   Pencil,
   SlidersHorizontal,
   BookOpenCheck,
@@ -110,15 +109,9 @@ export function AccountMenu({ data }: { data: ShellData }) {
       icon: ChartLine,
     },
     {
-      href: "/journal",
-      label: "Journal",
-      detail: "Each day: what you built, read and reviewed",
-      icon: NotebookPen,
-    },
-    {
       href: "/your-page",
       label: "Your page",
-      detail: "What you learned, on a page you can share",
+      detail: "What you learned and built, on a page you can share",
       icon: BookOpenCheck,
     },
     ...(data.extraNav ?? []).map((item) => ({

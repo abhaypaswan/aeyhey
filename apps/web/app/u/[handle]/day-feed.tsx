@@ -156,10 +156,13 @@ export function DayFeed({
   handle,
   initialDays,
   initialCursor,
+  moreFrom,
 }: {
   handle: string;
   initialDays: FeedDay[];
   initialCursor: string | null;
+  /** Where older days come from: the public feed, or the owner's own for Your page. */
+  moreFrom?: string;
 }) {
   const [days, setDays] = useState(initialDays);
   const [cursor, setCursor] = useState(initialCursor);
@@ -172,7 +175,7 @@ export function DayFeed({
     setFailed(false);
     try {
       const res = await fetch(
-        `/api/u/${encodeURIComponent(handle)}/days?before=${encodeURIComponent(cursor)}`,
+        `${moreFrom ?? `/api/u/${encodeURIComponent(handle)}/days`}?before=${encodeURIComponent(cursor)}`,
       );
       if (!res.ok) throw new Error(String(res.status));
       const page = (await res.json()) as { days: FeedDay[]; nextCursor: string | null };

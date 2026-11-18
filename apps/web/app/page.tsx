@@ -148,11 +148,11 @@ export default async function HomePage({
 
             {journalDrafts > 0 ? (
               <a
-                href="/journal"
+                href="/your-page"
                 className="text-muted-foreground hover:text-foreground mt-3 text-sm underline-offset-2 hover:underline"
               >
                 {pluralize(journalDrafts, "highlight")} from your coding sessions{" "}
-                {journalDrafts === 1 ? "is" : "are"} waiting in Journal.
+                {journalDrafts === 1 ? "is" : "are"} waiting on your page.
               </a>
             ) : null}
           </section>

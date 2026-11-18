@@ -307,6 +307,13 @@ describe("changing the handle", () => {
     await savePublicProfile(owner, { handle: "abhay-p" });
     expect(await movedHandle(db.handle, "abhay")).toBeNull();
   });
+
+  it("reads a hidden page only for the owner's preview", async () => {
+    await savePublicProfile(scopeFor(db.handle, ownerId), { handle: "abhay", enabled: false });
+    expect(await publicPageByHandle(db.handle, "abhay")).toBeNull();
+    const preview = await publicPageByHandle(db.handle, "abhay", { includeHidden: true });
+    expect(preview?.handle).toBe("abhay");
+  });
 });
 
 describe("the work side of the page", () => {

@@ -27,6 +27,7 @@ import {
   type SeedQuestion,
 } from "./data";
 import { SEED_LIBRARY_DECKS, SEED_LIBRARY_LINKS } from "./library";
+import { seedDemoPage } from "./page";
 import { createLogger } from "../logger";
 
 const log = createLogger("seed");
@@ -400,6 +401,9 @@ export async function seedDemoData(handle: DbHandle, now = new Date()): Promise<
     .set({ cardsPerSession: 5, cadence: "daily", sendTime: "09:00", updatedAt: now })
     .where(eq(settings.userId, userId));
 
+  // ---------------------------------------------------------------- public page
+  await seedDemoPage(handle, scope, now);
+
   await handle.db
     .insert(appMeta)
     .values({ key: SEED_MARKER, value: now.toISOString(), updatedAt: now })
@@ -436,6 +440,10 @@ export async function resetDemoData(handle: DbHandle): Promise<SeedResult | null
     schema.decks,
     schema.questionSources,
     schema.links,
+    schema.agentHighlights,
+    schema.agentDays,
+    schema.agentSignals,
+    schema.publicProfiles,
     schema.notifications,
     schema.jobs,
     schema.aiUsage,
@@ -458,3 +466,4 @@ export async function ensureDemoData(
 
 export * from "./data";
 export * from "./library";
+export * from "./page";

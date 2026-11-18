@@ -483,7 +483,11 @@ export interface PublicPage {
 export async function publicPageByHandle(
   handle: DbHandle,
   rawHandle: string,
-  options: { cursor?: string | null } = {},
+  options: {
+    cursor?: string | null;
+    /** For the owner's own preview: a hidden page still reads, with nothing else widened. */
+    includeHidden?: boolean;
+  } = {},
 ): Promise<PublicPage | null> {
   const { publicProfiles, users } = handle.schema;
   const wanted = normalizeHandle(rawHandle);
@@ -515,7 +519,7 @@ export async function publicPageByHandle(
     .where(eq(publicProfiles.handle, wanted))
     .limit(1);
   const profile = rows[0];
-  if (!profile || !profile.enabled) return null;
+  if (!profile || (!profile.enabled && !options.includeHidden)) return null;
 
   const ownerScope = scopeFor(handle, profile.userId);
   const page = await listSharedLinks(ownerScope, {

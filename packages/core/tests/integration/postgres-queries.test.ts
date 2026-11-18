@@ -15,6 +15,8 @@ import { scopeFor } from "../../src/repos/context";
 import { listLinks } from "../../src/repos/links";
 import { resetDemoData } from "../../src/seed/index";
 import { searchLibrary } from "../../src/assistant/search";
+import { listHighlights } from "../../src/repos/agent";
+import { publicPageByHandle, savePublicProfile } from "../../src/repos/public-page";
 
 const pgUrl = process.env.CORE_TEST_DATABASE_URL;
 
@@ -76,6 +78,26 @@ describe.skipIf(!pgUrl)("Postgres-specific queries", () => {
       expect(hits.length).toBeGreaterThan(0);
       expect(hits.some((hit) => hit.kind === "question")).toBe(true);
       expect(hits.some((hit) => hit.kind === "link")).toBe(true);
+    } finally {
+      await pg.close();
+    }
+  });
+
+  it("draws the demo's page, and a hidden one only for its owner", async () => {
+    const pg = await openDb(pgUrl!);
+    try {
+      await runMigrations({ handle: pg });
+      const seeded = await resetDemoData(pg);
+      const scope = scopeFor(pg, seeded!.userId);
+
+      const page = await publicPageByHandle(pg, "demo");
+      expect(page?.days.length).toBeGreaterThan(0);
+      const drafts = await listHighlights(scope, { from: "2000-01-01" });
+      expect(drafts.filter((h) => h.status === "draft")).toHaveLength(2);
+
+      await savePublicProfile(scope, { enabled: false });
+      expect(await publicPageByHandle(pg, "demo")).toBeNull();
+      expect(await publicPageByHandle(pg, "demo", { includeHidden: true })).not.toBeNull();
     } finally {
       await pg.close();
     }

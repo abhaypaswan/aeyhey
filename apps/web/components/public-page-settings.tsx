@@ -279,8 +279,9 @@ function YourPage({
   return (
     <Page width="wide">
       <PageHeader
-        title="Your page"
-        subtitle="What you learned from what you read, at an address you can share."
+        back={{ href: "/your-page", label: "Your page" }}
+        title="Edit your page"
+        subtitle="Its address, its words, your work and what shows on it."
         action={
           <LinkButton href={`/u/${saved.handle}`} icon={ExternalLink} external>
             View your page
