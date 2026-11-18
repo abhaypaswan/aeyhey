@@ -46,6 +46,12 @@ export interface EnqueueInput {
    * twice.
    */
   dedupeKey?: string;
+  /**
+   * With dedupeKey: a job with the key that already finished counts too, so the key runs
+   * once. For a sweep keyed by the hour: on a serverless host the worker starts fresh
+   * every minute and cannot remember that it already ran this hour.
+   */
+  once?: boolean;
 }
 
 export const DEFAULT_MAX_ATTEMPTS = 3;
@@ -62,6 +68,14 @@ export function backoffMs(attempts: number): number {
  * payload is JSON text in SQLite and jsonb in Postgres, and the two read a field from it
  * differently: json_extract does not exist in Postgres.
  */
+/** A text field of a job's payload, as SQL for whichever database this is. */
+export function payloadField(handle: DbHandle, field: string): SQL {
+  const { jobs } = handle.schema;
+  return handle.dialect === "postgres"
+    ? sql`(${jobs.payload} ->> ${sql.raw(`'${field.replace(/[^a-zA-Z]/g, "")}'`)})`
+    : sql`json_extract(${jobs.payload}, ${sql.raw(`'$.${field.replace(/[^a-zA-Z]/g, "")}'`)})`;
+}
+
 export function payloadDedupeKey(handle: DbHandle): SQL {
   const { jobs } = handle.schema;
   return handle.dialect === "postgres"
@@ -80,7 +94,7 @@ export async function enqueue(handle: DbHandle, input: EnqueueInput): Promise<st
       .where(
         and(
           eq(jobs.type, input.type),
-          inArray(jobs.status, ["queued", "running", "blocked"]),
+          input.once ? sql`1 = 1` : inArray(jobs.status, ["queued", "running", "blocked"]),
           sql`${payloadDedupeKey(handle)} = ${input.dedupeKey}`,
         ),
       )

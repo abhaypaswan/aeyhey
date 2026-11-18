@@ -12,8 +12,9 @@ import { pageState } from "../../../lib/server";
 import { TakeawayEditor } from "../../../components/takeaway-editor";
 import { LinkActions, LinkDetails, LinkMoreMenu } from "../../../components/link-detail";
 import { getRuntime } from "../../../runtime";
-import { hostOf, relativeDate } from "../../../lib/format";
+import { hostOf, linkTitle, relativeDate } from "../../../lib/format";
 import { strong, type Hue } from "../../../lib/hue";
+import { cx } from "../../../components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -106,8 +107,15 @@ export default async function LinkPage({ params }: { params: Promise<{ id: strin
               </>
             ) : null}
           </p>
-          <h1 className="font-display mt-3 text-[29px] font-[560] leading-[1.14] tracking-[-0.014em] lg:text-[42px]">
-            {link.title ?? link.url}
+          {/* An address has no spaces, so it may break anywhere; until the real title is
+              known it is shown smaller, as what it is. */}
+          <h1
+            className={cx(
+              "font-display mt-3 font-[560] leading-[1.14] tracking-[-0.014em] [overflow-wrap:anywhere]",
+              link.title ? "text-[29px] lg:text-[42px]" : "text-[24px] lg:text-[30px]",
+            )}
+          >
+            {linkTitle(link.title, link.url)}
           </h1>
 
           {pending ? (

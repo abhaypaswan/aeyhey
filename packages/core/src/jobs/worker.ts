@@ -39,6 +39,7 @@ import { runReminderLoop } from "../notify/reminder-loop";
 import { queueTopUps } from "../questions/top-up";
 import { queueDigests } from "../agent/digest";
 import { enqueue } from "./queue";
+import { requeueStuckLinks } from "./requeue";
 import { createLogger } from "../logger";
 
 const log = createLogger("worker");
@@ -166,6 +167,12 @@ export function createWorker(options: WorkerOptions): Worker {
       } catch (error) {
         log.error("could not queue the question top-ups", { error: (error as Error).message });
       }
+      // A link whose job was never queued would show as being read for ever.
+      try {
+        await requeueStuckLinks(handle);
+      } catch (error) {
+        log.error("could not requeue stuck links", { error: (error as Error).message });
+      }
       // A finished day of agent sessions becomes a few draft highlights (PRD 29.2).
       try {
         await queueDigests({ handle });
@@ -183,6 +190,7 @@ export function createWorker(options: WorkerOptions): Worker {
           type: "expire_links",
           payload: {},
           dedupeKey: `expire:${new Date().toISOString().slice(0, 13)}`,
+          once: true,
         });
       } catch (error) {
         log.error("could not queue the expiry sweep", { error: (error as Error).message });

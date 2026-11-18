@@ -25,7 +25,7 @@ import { Assistant } from "../components/assistant";
 import { DeckRow } from "../components/deck-row";
 import { KnowledgeMap } from "../components/knowledge-map";
 import { loadMapData } from "../lib/map-data";
-import { hostOf, midSentence, pluralize } from "../lib/format";
+import { hostOf, linkTitle, midSentence, pluralize } from "../lib/format";
 import { strong } from "../lib/hue";
 
 export const dynamic = "force-dynamic";
@@ -228,7 +228,7 @@ export default async function HomePage({
                       >
                         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                           <span className="font-display truncate text-[17px] font-[560] leading-[1.2]">
-                            {item.title ?? item.url}
+                            {linkTitle(item.title, item.url)}
                           </span>
                           <span className="text-muted-foreground truncate text-[12.5px]">
                             {item.siteName ?? hostOf(item.url)}

@@ -28,6 +28,18 @@ export function hostOf(url: string): string {
   }
 }
 
+/**
+ * What to call a link before its real title is known: the address without the scheme,
+ * "www." or a trailing slash. "https://murf.ai/api/docs/" reads as "murf.ai/api/docs".
+ */
+export function linkTitle(title: string | null | undefined, url: string): string {
+  if (title) return title;
+  return url
+    .replace(/^[a-z]+:\/\//i, "")
+    .replace(/^www\./, "")
+    .replace(/\/+$/, "");
+}
+
 export function pluralize(count: number, one: string, many?: string): string {
   return count === 1 ? `${count} ${one}` : `${count} ${many ?? `${one}s`}`;
 }

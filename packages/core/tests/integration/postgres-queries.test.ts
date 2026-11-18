@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import { openDb } from "../../src/db/client";
 import { runMigrations } from "../../src/db/migrate";
 import { claimNextJob, enqueue } from "../../src/jobs/queue";
+import { STUCK_AFTER_MS, requeueStuckLinks } from "../../src/jobs/requeue";
 import { scopeFor } from "../../src/repos/context";
 import { listLinks } from "../../src/repos/links";
 import { resetDemoData } from "../../src/seed/index";
@@ -97,6 +98,33 @@ describe.skipIf(!pgUrl)("Postgres-specific queries", () => {
       await savePublicProfile(scope, { enabled: false });
       expect(await publicPageByHandle(pg, "demo")).toBeNull();
       expect(await publicPageByHandle(pg, "demo", { includeHidden: true })).not.toBeNull();
+    } finally {
+      await pg.close();
+    }
+  });
+
+  it("finds links saved without a job, and runs a once-only job once", async () => {
+    const pg = await openDb(pgUrl!);
+    try {
+      await runMigrations({ handle: pg });
+      await resetDemoData(pg);
+      const raw = pg.raw as (strings: TemplateStringsArray) => Promise<unknown>;
+      await raw`delete from jobs`;
+      await raw`update links set extract_status = 'pending' where id = (select id from links limit 1)`;
+      const later = new Date(Date.now() + STUCK_AFTER_MS + 60_000);
+      expect(await requeueStuckLinks(pg, later)).toBe(1);
+      expect(await requeueStuckLinks(pg, later)).toBe(0);
+
+      const first = await enqueue(pg, {
+        type: "expire_links",
+        payload: {},
+        dedupeKey: "k",
+        once: true,
+      });
+      await raw`update jobs set status = 'done' where type = 'expire_links'`;
+      expect(
+        await enqueue(pg, { type: "expire_links", payload: {}, dedupeKey: "k", once: true }),
+      ).toBe(first);
     } finally {
       await pg.close();
     }

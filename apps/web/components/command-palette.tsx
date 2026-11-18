@@ -26,7 +26,7 @@ import {
 import { Dialog, DialogBackdrop, DialogContent, DialogTitle } from "@ui-sdk/react/dialog";
 import { apiClient } from "../lib/client";
 import { OPEN_PALETTE_EVENT } from "./nav";
-import { hostOf } from "../lib/format";
+import { hostOf, linkTitle } from "../lib/format";
 import {
   Brain,
   Inbox,
@@ -221,7 +221,7 @@ export function CommandPalette() {
                         <TypeIcon size={15} />
                       </CommandItemIcon>
                       <span className="flex min-w-0 flex-col">
-                        <span className="truncate">{hit.title ?? hit.url}</span>
+                        <span className="truncate">{linkTitle(hit.title, hit.url)}</span>
                         <span className="text-subtle-foreground truncate text-xs">
                           {hit.siteName ?? hostOf(hit.url)}
                         </span>

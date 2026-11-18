@@ -19,7 +19,7 @@ import { Checkbox, CheckboxIndicator } from "@ui-sdk/react/checkbox";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@ui-sdk/react/menu";
 import { Toolbar, ToolbarButton } from "@ui-sdk/react/toolbar";
 import { apiClient, ApiRequestError } from "../lib/client";
-import { hostOf } from "../lib/format";
+import { hostOf, linkTitle } from "../lib/format";
 import { hueFor, strong, type Hue } from "../lib/hue";
 import { LifeMark } from "./drawings";
 import { cx } from "./ui";
@@ -630,14 +630,17 @@ function InboxRow({
         <a
           href={`/links/${item.id}`}
           onClick={(event) => {
-            if (event.metaKey || event.ctrlKey || event.shiftKey || !paneIsVisible()) return;
+            // The pane shows a row on the first click; a click on the row it already shows
+            // opens the page, or the click would seem to do nothing.
+            if (event.metaKey || event.ctrlKey || event.shiftKey || !paneIsVisible() || previewed)
+              return;
             event.preventDefault();
             onPreview();
           }}
           aria-current={previewed ? "true" : undefined}
           className="font-display mt-[5px] line-clamp-2 text-[19.5px] font-[540] leading-[1.22] tracking-[-0.008em] after:absolute after:inset-0 after:content-['']"
         >
-          {item.title ?? item.url}
+          {linkTitle(item.title, item.url)}
         </a>
         {item.summaryLines ? (
           <p className="text-muted-foreground mt-[5px] line-clamp-2 text-sm leading-[1.4]">
@@ -734,7 +737,7 @@ function ReadingPane({
         ) : null}
       </p>
       <h2 className="font-display mt-3 text-[29px] font-[560] leading-[1.14] tracking-[-0.014em]">
-        {item.title ?? item.url}
+        {linkTitle(item.title, item.url)}
       </h2>
 
       {summary ? (
