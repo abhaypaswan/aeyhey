@@ -115,8 +115,8 @@ const EXAMPLES: { label: string; text?: string; attach?: boolean; icon: typeof L
   },
   { label: "Attach a book, notes or resume", attach: true, icon: Paperclip },
   {
-    label: "What did I save about Postgres?",
-    text: "What did I save about Postgres?",
+    label: "What did I save about black holes?",
+    text: "What did I save about black holes?",
     icon: Sparkles,
   },
 ];
