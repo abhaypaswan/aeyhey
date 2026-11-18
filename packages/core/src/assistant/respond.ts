@@ -258,9 +258,16 @@ async function chat(
     return null;
   }
 
+  // Models do not always fill in cited, so a piece whose title the answer quotes counts
+  // as used too.
   const cited = new Set(turn.cited);
+  const replyLower = turn.reply.toLowerCase();
   const sources = hits
-    .filter((hit) => cited.has(hit.id))
+    .filter(
+      (hit) =>
+        cited.has(hit.id) ||
+        (hit.title.length >= 12 && replyLower.includes(hit.title.toLowerCase().slice(0, 60))),
+    )
     .map((hit) => ({ id: hit.id, kind: hit.kind, title: hit.title, href: hit.href }));
   const topics = [...new Set(turn.topics.map((topic) => topic.trim()).filter(Boolean))].slice(
     0,
