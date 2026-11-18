@@ -26,7 +26,9 @@ test.describe("the demo flow", () => {
     await expect(start.or(caughtUp).first()).toBeVisible();
 
     await expect(
-      page.getByText(/waiting to be read|on last chance|nothing waiting/i),
+      page
+        .getByRole("region", { name: "Where you stand" })
+        .getByText(/waiting to be read|on last chance|nothing waiting/i),
     ).toBeVisible();
   });
 

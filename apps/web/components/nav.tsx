@@ -53,8 +53,6 @@ const TABS = [
   { href: "/", label: "Home", wideOnly: false },
   { href: "/inbox", label: "Inbox", wideOnly: false },
   { href: "/decks", label: "Decks", wideOnly: false },
-  // The map needs the room a wide screen has; phones get it later.
-  { href: "/map", label: "Map", wideOnly: true },
 ];
 
 function activeTab(pathname: string): string | null {

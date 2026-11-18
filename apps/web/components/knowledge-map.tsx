@@ -179,7 +179,14 @@ function layout(items: MapItem[]): { nodes: Node[]; edges: Edge[] } {
   return { nodes, edges };
 }
 
-export function KnowledgeMap({ data }: { data: MapData }) {
+export function KnowledgeMap({
+  data,
+  embedded = false,
+}: {
+  data: MapData;
+  /** Drawn as a section of Home rather than as a page of its own. */
+  embedded?: boolean;
+}) {
   const { nodes, edges } = useMemo(() => layout(data.items), [data.items]);
 
   const [show, setShow] = useState<Show>("all");
@@ -231,6 +238,9 @@ export function KnowledgeMap({ data }: { data: MapData }) {
     const svg = svgRef.current;
     if (!svg) return;
     const onWheel = (event: WheelEvent): void => {
+      // Inside Home the wheel scrolls the page; zooming takes Cmd or Ctrl, which is also
+      // what a trackpad pinch sends.
+      if (embedded && !event.ctrlKey && !event.metaKey) return;
       event.preventDefault();
       const rect = svg.getBoundingClientRect();
       setView((current) => {
@@ -251,7 +261,7 @@ export function KnowledgeMap({ data }: { data: MapData }) {
     };
     svg.addEventListener("wheel", onWheel, { passive: false });
     return () => svg.removeEventListener("wheel", onWheel);
-  }, [bounds.w]);
+  }, [bounds.w, embedded]);
 
   // What is lit: everything, or what the filters leave. The rest fades but stays, so the
   // shape of the whole is never lost.
@@ -306,6 +316,7 @@ export function KnowledgeMap({ data }: { data: MapData }) {
   }
 
   if (data.items.length === 0) {
+    if (embedded) return null;
     return (
       <main className="mx-auto w-full max-w-6xl px-[22px] pb-16 pt-8 sm:px-6 lg:px-8">
         <h1 className="font-display text-[30px] font-[640] leading-[1.1] lg:text-4xl">Map</h1>
@@ -317,11 +328,23 @@ export function KnowledgeMap({ data }: { data: MapData }) {
     );
   }
 
+  const Outer = embedded ? "section" : "main";
   return (
-    <main className="mx-auto grid w-full max-w-[110rem] flex-1 gap-6 px-4 pb-8 pt-2 sm:px-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:px-8 lg:pt-4">
+    <Outer
+      {...(embedded ? { "aria-label": "Your map" } : {})}
+      className={cx(
+        "grid w-full gap-6",
+        embedded
+          ? "lg:grid-cols-[minmax(0,1fr)_19rem]"
+          : "mx-auto max-w-[110rem] flex-1 px-4 pb-8 pt-2 sm:px-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:px-8 lg:pt-4",
+      )}
+    >
       <section
         aria-label="Map of your links and questions"
-        className="map-canvas relative min-h-[60dvh] overflow-hidden rounded-[22px] lg:h-[calc(100dvh-6.5rem)] lg:min-h-0"
+        className={cx(
+          "map-canvas relative overflow-hidden rounded-[22px]",
+          embedded ? "h-[36rem]" : "min-h-[60dvh] lg:h-[calc(100dvh-6.5rem)] lg:min-h-0",
+        )}
       >
         <svg
           ref={svgRef}
@@ -485,13 +508,31 @@ export function KnowledgeMap({ data }: { data: MapData }) {
           </SdkButton>
         </div>
         <p className="text-muted-foreground pointer-events-none absolute left-4 top-3 hidden text-xs lg:block">
-          Drag to move, scroll to zoom, click a subject to focus it
+          {embedded
+            ? "Drag to move, pinch or Cmd and scroll to zoom, click a subject to focus it"
+            : "Drag to move, scroll to zoom, click a subject to focus it"}
         </p>
       </section>
 
-      <aside className="flex min-w-0 flex-col gap-6 lg:h-[calc(100dvh-6.5rem)] lg:overflow-y-auto lg:pr-1">
+      <aside
+        className={cx(
+          "flex min-w-0 flex-col gap-6",
+          embedded
+            ? "lg:h-[36rem] lg:overflow-y-auto lg:pr-1"
+            : "lg:h-[calc(100dvh-6.5rem)] lg:overflow-y-auto lg:pr-1",
+        )}
+      >
         <div>
-          <h1 className="font-display text-[30px] font-[640] leading-[1.1]">Map</h1>
+          {embedded ? (
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="font-display text-xl font-[640]">Your map</h2>
+              <a href="/map" className="text-primary text-sm font-semibold hover:underline">
+                Full screen
+              </a>
+            </div>
+          ) : (
+            <h1 className="font-display text-[30px] font-[640] leading-[1.1]">Map</h1>
+          )}
           <p className="text-muted-foreground mt-2 text-[15px] leading-[1.45]">
             {questionCount} questions and {linkCount} links across {hubs.length} subjects.{" "}
             {bridges.length > 0
@@ -606,7 +647,7 @@ export function KnowledgeMap({ data }: { data: MapData }) {
           </ul>
         </section>
       </aside>
-    </main>
+    </Outer>
   );
 }
 

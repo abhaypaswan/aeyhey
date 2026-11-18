@@ -22,6 +22,8 @@ import {
   StreakFlame,
 } from "../components/drawings";
 import { PasteBox } from "../components/paste-box";
+import { KnowledgeMap } from "../components/knowledge-map";
+import { loadMapData } from "../lib/map-data";
 import { hostOf, midSentence, pluralize } from "../lib/format";
 import { strong } from "../lib/hue";
 
@@ -36,7 +38,7 @@ export default async function HomePage() {
   const now = new Date();
 
   // The same numbers GET /api/today returns, so the phone app and this page agree.
-  const today = await sessions.loadToday(scope, now);
+  const [today, map] = await Promise.all([sessions.loadToday(scope, now), loadMapData(scope)]);
 
   // Journal drafts waiting for a keep or drop, from the last two weeks.
   const twoWeeksAgo = new Date(now.getTime() - 13 * 86_400_000).toISOString().slice(0, 10);
@@ -250,6 +252,13 @@ export default async function HomePage() {
           ) : null}
         </aside>
       </div>
+
+      {/* Everything you keep, as one picture: on a wide screen, where there is room for it. */}
+      {nothingSaved ? null : (
+        <div className="mt-14 hidden lg:block">
+          <KnowledgeMap data={map} embedded />
+        </div>
+      )}
     </main>
   );
 }
