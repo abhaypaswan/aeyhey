@@ -9,28 +9,67 @@
 // your links, decks or anything else, because it lives in a config file on a laptop.
 
 import { useState } from "react";
+import { Check, Copy } from "lucide-react";
 import { apiClient, ApiRequestError } from "../lib/client";
 import { agentPrompt } from "../lib/agent-setup";
 import { CopyCode } from "./copy-code";
-import { Button, Card, CardTitle, Field, Input, Notice } from "./ui";
+import { Button, Card, CardTitle, Notice } from "./ui";
+
+/** A name for the token, so it can be told apart under Data, Signed-in apps. */
+function tokenName(): string {
+  const platform = navigator.userAgent;
+  const machine = /Mac/i.test(platform)
+    ? "Mac"
+    : /Windows/i.test(platform)
+      ? "Windows"
+      : /Linux/i.test(platform)
+        ? "Linux"
+        : "this computer";
+  const day = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return `Coding agent on ${machine}, ${day}`;
+}
 
 export function AgentSettings({ publicUrl }: { publicUrl: string }) {
   const base = publicUrl.replace(/\/+$/, "");
-  const [name, setName] = useState("");
-  const [token, setToken] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function create() {
+  const makePrompt = async (): Promise<string> => {
+    const issued = await apiClient.post<{ token: string }>("/api/agent/tokens", {
+      name: tokenName(),
+    });
+    const text = agentPrompt(base, issued.token);
+    setPrompt(text);
+    return text;
+  };
+
+  async function copyPrompt() {
     setBusy(true);
     setError(null);
+    const pending = makePrompt();
     try {
-      const issued = await apiClient.post<{ token: string }>("/api/agent/tokens", {
-        name: name.trim(),
-      });
-      setToken(issued.token);
+      // Handed to the clipboard while the click still counts, with the text to follow:
+      // Safari refuses a write that only starts once the token has come back.
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/plain": pending.then((text) => new Blob([text], { type: "text/plain" })),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(await pending);
+      }
+      setCopied(true);
     } catch (thrown) {
-      setError(thrown instanceof ApiRequestError ? thrown.message : "That did not work.");
+      try {
+        // The token was made but the clipboard said no: the prompt is shown to copy by hand.
+        await pending;
+        setCopied(false);
+      } catch {
+        setError(thrown instanceof ApiRequestError ? thrown.message : "That did not work.");
+      }
     } finally {
       setBusy(false);
     }
@@ -38,41 +77,33 @@ export function AgentSettings({ publicUrl }: { publicUrl: string }) {
 
   return (
     <Card className="flex flex-col gap-4">
-      <CardTitle hint="Claude Code, Codex, Cursor, Gemini CLI or any agent that speaks MCP. Make a token, copy the prompt into your agent, and it reads the setup page and connects itself.">
+      <CardTitle hint="Paste it into Claude Code, Codex, Cursor or any agent that speaks MCP. It reads the setup page and connects itself.">
         Connect a coding agent
       </CardTitle>
       {error ? <Notice tone="error">{error}</Notice> : null}
-      {token ? (
+      {prompt ? (
         <>
-          <Notice tone="warning">
-            The token in this prompt is shown once. Copy it now. It can only add notes and links,
-            and you can sign it out from Data, Signed-in apps.
+          <Notice tone={copied ? "success" : "warning"}>
+            {copied
+              ? "Copied. Paste it into your agent. The token in it is shown only here, once."
+              : "Copy this prompt now. The token in it is shown only here, once."}
           </Notice>
-          <CopyCode label="Paste this into your agent" text={agentPrompt(base, token)} wrap />
+          <CopyCode label="The prompt" text={prompt} wrap />
         </>
       ) : (
-        <>
-          <Field label="Name it" hint="The machine or agent it is for, such as Work laptop.">
-            <Input
-              value={name}
-              maxLength={80}
-              placeholder="Work laptop"
-              onChange={(event) => setName(event.target.value)}
-            />
-          </Field>
-          <div>
-            <Button tone="primary" disabled={busy || name.trim() === ""} onClick={create}>
-              Make a token and prompt
-            </Button>
-          </div>
-        </>
+        <div>
+          <Button tone="primary" icon={copied ? Check : Copy} disabled={busy} onClick={copyPrompt}>
+            {busy ? "Making a token" : "Copy prompt"}
+          </Button>
+        </div>
       )}
       <p className="text-muted-foreground text-sm">
-        Rather do it yourself? Every step for each agent is on the{" "}
+        The token in the prompt can only add notes and links, and you can sign it out from Data,
+        Signed-in apps. Rather set it up yourself? Every step is on the{" "}
         <a href="/agents" className="text-primary font-semibold hover:underline">
           setup page
         </a>
-        . Agents only ever send a one-line note or a link, never code, prompts or file contents.
+        .
       </p>
     </Card>
   );
