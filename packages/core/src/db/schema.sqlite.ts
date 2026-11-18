@@ -763,6 +763,8 @@ export const authCodes = sqliteTable(
     codeChallenge: text("code_challenge").notNull(),
     redirectUri: text("redirect_uri").notNull(),
     deviceName: text("device_name").notNull(),
+    /** What the token it trades for may do: "app" for a phone, "agent" for a coding agent. */
+    scope: text("scope").notNull().default("app"),
     expiresAt: ts("expires_at").notNull(),
     usedAt: ts("used_at"),
     createdAt: nowDefault(),

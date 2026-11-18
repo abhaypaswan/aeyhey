@@ -2,6 +2,7 @@
 export * from "./respond";
 export * from "./schemas";
 export * from "./handlers";
+export { describeRedirect, readAuthorizeRequest, type AuthorizeRequest } from "./oauth-handlers";
 export * from "./data";
 export * from "./manifest";
 export * from "./openapi";

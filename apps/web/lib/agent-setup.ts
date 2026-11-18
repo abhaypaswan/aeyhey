@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // How to connect a coding agent to Aeyhey, written for the agent to read and follow.
 //
-// The person copies one prompt from Settings, Agents: it carries this page's address and
-// their agent token, and their agent (Claude Code, Codex, Cursor, Gemini CLI or anything
-// else that speaks MCP) reads the page and sets itself up. The same content is served as
-// a page at /agents for people and as plain Markdown at /agents.md for agents, so the
-// two cannot drift apart. Nothing here is secret: the token only ever arrives in the
-// prompt, never on this public page.
+// The person copies one prompt from Settings, Agents with this page's address in it, and
+// their agent (Claude Code, Codex, Cursor, Gemini CLI or anything else that speaks MCP)
+// reads the page and sets itself up. Agents sign in through the browser, the way MCP
+// servers such as Vercel's or Supabase's work, so no token is copied anywhere. A token is
+// only for the few things that cannot open a browser, such as Claude Code's session hook.
+// The same content is served as a page at /agents for people and as plain Markdown at
+// /agents.md for agents, so the two cannot drift apart.
 
 export type SetupBlock =
   | { kind: "p"; text: string }
@@ -49,33 +50,29 @@ export function agentSetup(baseUrl: string): AgentSetup {
           {
             kind: "steps",
             items: [
-              "Find the person's agent token. It starts with `ahy_` and should be in the message that sent you here. If it is not, ask them to make one in Aeyhey under Settings, Agents, and wait for it.",
-              "Store the token as the environment variable `AEYHEY_TOKEN` in the person's shell profile (`~/.zshrc`, `~/.bashrc` or the equivalent), so it is set wherever you run. Never write it into a project, a repository or a file that is committed, and do not repeat it back in your reply.",
-              "Add the Aeyhey MCP server to your own user-level configuration, using the section below for the agent you are. If you are none of them, follow Any other agent.",
+              "Add the Aeyhey MCP server to your own user-level configuration, using the section below for the agent you are. If you are none of them, follow Any other agent. No token or key is needed: Aeyhey signs you in through the browser.",
+              "Start the sign-in, as your section says. The person's browser opens on Aeyhey, they sign in if they need to, and they tap Allow. If you cannot start it yourself, tell the person exactly what to run or click.",
               "Check that it works: list your MCP servers or tools. You should see `aeyhey` with the tools `highlight` and `save_link`. If your configuration only loads at start, tell the person to restart you.",
-              "Tell the person what you set up and where, without showing the token.",
+              "Tell the person what you set up and where.",
             ],
           },
           { kind: "p", text: "The server, for any agent:" },
-          { kind: "code", label: "MCP server (Streamable HTTP)", text: mcp },
-          { kind: "code", label: "Header", text: "Authorization: Bearer <the agent token>" },
+          { kind: "code", label: "MCP server (Streamable HTTP, browser sign-in)", text: mcp },
         ],
       },
       {
         id: "claude-code",
         title: "Claude Code",
         blocks: [
+          { kind: "p", text: "Add the server for every project:" },
+          { kind: "code", text: `claude mcp add --transport http --scope user aeyhey ${mcp}` },
           {
             kind: "p",
-            text: "Add the server for every project, reading the token from the environment:",
-          },
-          {
-            kind: "code",
-            text: `claude mcp add --transport http --scope user aeyhey ${mcp} --header "Authorization: Bearer $AEYHEY_TOKEN"`,
+            text: "Then sign in: in Claude Code, run `/mcp`, pick `aeyhey` and choose Authenticate. A running session cannot do this for itself, so ask the person to.",
           },
           {
             kind: "p",
-            text: "Claude Code can also report each finished session on its own, with a hook. It sends only counts and names: times, token counts and models, tool calls, lines changed, file types and commit messages. Download it:",
+            text: "Optional: Claude Code can also report each finished session with a hook, which sends only counts and names (times, token counts and models, tool calls, lines changed, file types and commit messages). A hook cannot sign in through a browser, so it needs a token: the person makes one in Aeyhey under Settings, Agents, Make a token. Download the hook:",
           },
           {
             kind: "code",
@@ -83,14 +80,14 @@ export function agentSetup(baseUrl: string): AgentSetup {
           },
           {
             kind: "p",
-            text: "Then merge this into `~/.claude/settings.json`, keeping everything already there. Put the real token in place of `$AEYHEY_TOKEN`, since this file does not read the shell. The hook needs Node 18 or later.",
+            text: "Then merge this into `~/.claude/settings.json`, keeping everything already there, with the token in place of `<the token>`. Never put it in a project's files. The hook needs Node 18 or later.",
           },
           {
             kind: "code",
             label: "~/.claude/settings.json",
             text: JSON.stringify(
               {
-                env: { AEYHEY_URL: base, AEYHEY_TOKEN: "$AEYHEY_TOKEN" },
+                env: { AEYHEY_URL: base, AEYHEY_TOKEN: "<the token>" },
                 hooks: {
                   SessionEnd: [
                     {
@@ -111,15 +108,14 @@ export function agentSetup(baseUrl: string): AgentSetup {
         id: "codex",
         title: "Codex",
         blocks: [
-          {
-            kind: "p",
-            text: "Add this to `~/.codex/config.toml`. Codex reads the token from `AEYHEY_TOKEN` when it starts, so that variable must be set in the shell Codex runs from.",
-          },
+          { kind: "p", text: "Add this to `~/.codex/config.toml`:" },
           {
             kind: "code",
             label: "~/.codex/config.toml",
-            text: `[mcp_servers.aeyhey]\nurl = "${mcp}"\nbearer_token_env_var = "AEYHEY_TOKEN"`,
+            text: `[mcp_servers.aeyhey]\nurl = "${mcp}"`,
           },
+          { kind: "p", text: "Then sign in, which opens the browser:" },
+          { kind: "code", text: "codex mcp login aeyhey" },
         ],
       },
       {
@@ -128,23 +124,12 @@ export function agentSetup(baseUrl: string): AgentSetup {
         blocks: [
           {
             kind: "p",
-            text: "Merge this into `~/.cursor/mcp.json`, keeping any servers already there, then restart Cursor so it picks up the server and the variable.",
+            text: "Merge this into `~/.cursor/mcp.json`, keeping any servers already there. Then in Cursor Settings, MCP, `aeyhey` shows as needing sign-in: the person clicks it, and the browser opens.",
           },
           {
             kind: "code",
             label: "~/.cursor/mcp.json",
-            text: JSON.stringify(
-              {
-                mcpServers: {
-                  aeyhey: {
-                    url: mcp,
-                    headers: { Authorization: "Bearer ${env:AEYHEY_TOKEN}" },
-                  },
-                },
-              },
-              null,
-              2,
-            ),
+            text: JSON.stringify({ mcpServers: { aeyhey: { url: mcp } } }, null, 2),
           },
         ],
       },
@@ -154,23 +139,12 @@ export function agentSetup(baseUrl: string): AgentSetup {
         blocks: [
           {
             kind: "p",
-            text: "Merge this into `~/.gemini/settings.json`, keeping everything already there, with the real token in place of `<the agent token>`. Then check it with `gemini mcp list`.",
+            text: "Merge this into `~/.gemini/settings.json`, keeping everything already there. Then in Gemini CLI run `/mcp auth aeyhey` to sign in through the browser.",
           },
           {
             kind: "code",
             label: "~/.gemini/settings.json",
-            text: JSON.stringify(
-              {
-                mcpServers: {
-                  aeyhey: {
-                    httpUrl: mcp,
-                    headers: { Authorization: "Bearer <the agent token>" },
-                  },
-                },
-              },
-              null,
-              2,
-            ),
+            text: JSON.stringify({ mcpServers: { aeyhey: { httpUrl: mcp } } }, null, 2),
           },
         ],
       },
@@ -180,7 +154,11 @@ export function agentSetup(baseUrl: string): AgentSetup {
         blocks: [
           {
             kind: "p",
-            text: `Any agent that supports MCP over Streamable HTTP can connect. Add a server named \`aeyhey\` at \`${mcp}\` with the header \`Authorization: Bearer <the agent token>\`, in your user-level configuration rather than a project's, so the token stays out of repositories.`,
+            text: `Add an MCP server named \`aeyhey\` at \`${mcp}\` (Streamable HTTP) in your user-level configuration. Agents that support MCP sign-in find it on their own: the server answers without a token with a 401 that points to it, and they open the browser.`,
+          },
+          {
+            kind: "p",
+            text: "If your agent cannot sign in through a browser, use a token instead: the person makes one in Aeyhey under Settings, Agents, Make a token, and you send it as the header `Authorization: Bearer <the token>`. Keep it in your user-level configuration or an environment variable, never in a project's files.",
           },
         ],
       },
@@ -194,7 +172,7 @@ export function agentSetup(baseUrl: string): AgentSetup {
           },
           {
             kind: "p",
-            text: "The token can only add notes and links. It cannot read anything in Aeyhey. The person can sign it out at any time in Aeyhey under Settings, Data, Signed-in apps.",
+            text: "The agent can only add notes and links. It cannot read anything in Aeyhey. The person sees it under Settings, Data, Signed-in apps, and can sign it out there at any time.",
           },
         ],
       },
@@ -202,10 +180,10 @@ export function agentSetup(baseUrl: string): AgentSetup {
   };
 }
 
-/** The prompt the person copies into their agent, with their token in it. */
-export function agentPrompt(baseUrl: string, token: string): string {
+/** The prompt the person copies into their agent. No secret in it: the agent signs in. */
+export function agentPrompt(baseUrl: string): string {
   const base = trimBase(baseUrl);
-  return `Connect yourself to my Aeyhey account, so you can save links for me and note what we finish. Read ${base}/agents.md and follow the steps for the agent you are. My Aeyhey agent token is ${token}. Keep it out of any project files and do not repeat it back to me.`;
+  return `Connect yourself to my Aeyhey, so you can save links for me and note what we finish. Read ${base}/agents.md and follow the steps for the agent you are.`;
 }
 
 /** The whole setup as Markdown, for an agent to read. */

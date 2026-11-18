@@ -1,0 +1,1 @@
+ALTER TABLE "auth_codes" ADD COLUMN "scope" text DEFAULT 'app' NOT NULL;

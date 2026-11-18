@@ -233,6 +233,8 @@ export interface AuthCodeInput {
   codeChallenge: string;
   redirectUri: string;
   deviceName: string;
+  /** What the token traded for this code may do. A phone gets "app"; an agent "agent". */
+  scope?: ApiTokenScope;
   now?: Date;
 }
 
@@ -247,6 +249,7 @@ export async function createAuthCode(handle: DbHandle, input: AuthCodeInput): Pr
     codeChallenge: input.codeChallenge,
     redirectUri: input.redirectUri,
     deviceName: input.deviceName.slice(0, 80),
+    scope: input.scope ?? "app",
     expiresAt: new Date(now.getTime() + AUTH_CODE_TTL_MS),
     usedAt: null,
     createdAt: now,
@@ -269,7 +272,7 @@ export interface ExchangeInput {
 export async function exchangeAuthCode(
   handle: DbHandle,
   input: ExchangeInput,
-): Promise<IssuedToken & { userId: string; deviceName: string }> {
+): Promise<IssuedToken & { userId: string; deviceName: string; scope: ApiTokenScope }> {
   const now = input.now ?? new Date();
   const { authCodes } = handle.schema;
 
@@ -287,12 +290,14 @@ export async function exchangeAuthCode(
     throw new InvalidGrantError();
   }
 
+  const scope: ApiTokenScope = row.scope === "agent" ? "agent" : "app";
   const issued = await issueApiToken(handle, {
     userId: row.userId,
     name: row.deviceName,
     now,
+    scope,
   });
-  return { ...issued, userId: row.userId, deviceName: row.deviceName };
+  return { ...issued, userId: row.userId, deviceName: row.deviceName, scope };
 }
 
 // ---------------------------------------------------------------- the provider wrapper

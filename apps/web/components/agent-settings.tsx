@@ -1,9 +1,9 @@
 "use client";
 // SPDX-License-Identifier: AGPL-3.0-only
-// Connecting a coding agent (PRD 29.4): make an agent token, then copy one prompt that
-// carries it and the address of the public setup page (/agents.md). The agent reads the
-// page and configures itself, whichever agent it is, so there is nothing to keep in step
-// here per agent.
+// Connecting a coding agent (PRD 29.4): copy one prompt with the address of the public
+// setup page (/agents.md). The agent reads it, adds the server and signs in through the
+// browser, so no token is copied. A token can still be made for what cannot open a
+// browser, such as Claude Code's session hook.
 //
 // The token is shown once and can only report sessions and highlights. It cannot read
 // your links, decks or anything else, because it lives in a config file on a laptop.
@@ -31,80 +31,78 @@ function tokenName(): string {
 
 export function AgentSettings({ publicUrl }: { publicUrl: string }) {
   const base = publicUrl.replace(/\/+$/, "");
-  const [prompt, setPrompt] = useState<string | null>(null);
+  const prompt = agentPrompt(base);
   const [copied, setCopied] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const makePrompt = async (): Promise<string> => {
-    const issued = await apiClient.post<{ token: string }>("/api/agent/tokens", {
-      name: tokenName(),
-    });
-    const text = agentPrompt(base, issued.token);
-    setPrompt(text);
-    return text;
-  };
-
   async function copyPrompt() {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  async function makeToken() {
     setBusy(true);
     setError(null);
-    const pending = makePrompt();
     try {
-      // Handed to the clipboard while the click still counts, with the text to follow:
-      // Safari refuses a write that only starts once the token has come back.
-      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/plain": pending.then((text) => new Blob([text], { type: "text/plain" })),
-          }),
-        ]);
-      } else {
-        await navigator.clipboard.writeText(await pending);
-      }
-      setCopied(true);
+      const issued = await apiClient.post<{ token: string }>("/api/agent/tokens", {
+        name: tokenName(),
+      });
+      setToken(issued.token);
     } catch (thrown) {
-      try {
-        // The token was made but the clipboard said no: the prompt is shown to copy by hand.
-        await pending;
-        setCopied(false);
-      } catch {
-        setError(thrown instanceof ApiRequestError ? thrown.message : "That did not work.");
-      }
+      setError(thrown instanceof ApiRequestError ? thrown.message : "That did not work.");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Card className="flex flex-col gap-4">
-      <CardTitle hint="Paste it into Claude Code, Codex, Cursor or any agent that speaks MCP. It reads the setup page and connects itself.">
-        Connect a coding agent
-      </CardTitle>
-      {error ? <Notice tone="error">{error}</Notice> : null}
-      {prompt ? (
-        <>
-          <Notice tone={copied ? "success" : "warning"}>
-            {copied
-              ? "Copied. Paste it into your agent. The token in it is shown only here, once."
-              : "Copy this prompt now. The token in it is shown only here, once."}
-          </Notice>
-          <CopyCode label="The prompt" text={prompt} wrap />
-        </>
-      ) : (
+    <>
+      <Card className="flex flex-col gap-4">
+        <CardTitle hint="Paste it into Claude Code, Codex, Cursor or any agent that speaks MCP. It reads the setup page, adds Aeyhey, and your browser opens to Allow it. No key or token to copy.">
+          Connect a coding agent
+        </CardTitle>
         <div>
-          <Button tone="primary" icon={copied ? Check : Copy} disabled={busy} onClick={copyPrompt}>
-            {busy ? "Making a token" : "Copy prompt"}
+          <Button tone="primary" icon={copied ? Check : Copy} onClick={() => void copyPrompt()}>
+            {copied ? "Copied" : "Copy prompt"}
           </Button>
         </div>
-      )}
-      <p className="text-muted-foreground text-sm">
-        The token in the prompt can only add notes and links, and you can sign it out from Data,
-        Signed-in apps. Rather set it up yourself? Every step is on the{" "}
-        <a href="/agents" className="text-primary font-semibold hover:underline">
-          setup page
-        </a>
-        .
-      </p>
-    </Card>
+        <CopyCode label="The prompt" text={prompt} wrap />
+        <p className="text-muted-foreground text-sm">
+          Rather set it up yourself? Every step for each agent is on the{" "}
+          <a href="/agents" className="text-primary font-semibold hover:underline">
+            setup page
+          </a>
+          . Agents only ever send a one-line note or a link, never code, prompts or file contents.
+        </p>
+      </Card>
+
+      <Card className="flex flex-col gap-3">
+        <CardTitle hint="For the few things that cannot sign in through a browser, such as Claude Code's session hook. It can only add notes and links, and shows under Data, Signed-in apps to sign out.">
+          Make a token
+        </CardTitle>
+        {error ? <Notice tone="error">{error}</Notice> : null}
+        {token ? (
+          <>
+            <Notice tone="warning">
+              Shown once. Put it in your agent&apos;s own settings, never in a project&apos;s files.
+            </Notice>
+            <CopyCode label="Token" text={token} />
+          </>
+        ) : (
+          <div>
+            <Button disabled={busy} onClick={() => void makeToken()}>
+              {busy ? "Making a token" : "Make a token"}
+            </Button>
+          </div>
+        )}
+      </Card>
+    </>
   );
 }

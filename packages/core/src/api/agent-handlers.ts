@@ -25,6 +25,7 @@ import { loadJournal } from "../repos/journal";
 import { fail, json, route, type RouteContext } from "./respond";
 import type { AuthProvider } from "../extensions/auth";
 import * as schemas from "./schemas";
+import { withSignInHint } from "./oauth-handlers";
 
 /** How far back the stats and the highlight list look by default. */
 const DEFAULT_DAYS = 182;
@@ -44,6 +45,10 @@ export function createAgentApi(deps: {
   const { handle, base, ai } = deps;
   const scope = (ctx: RouteContext<unknown>) => scopeFor(handle, ctx.user.id);
   const agentBase = { ...base, allowAgentToken: true };
+  const signInHint =
+    (handler: (req: Request) => Promise<Response>) =>
+    async (req: Request): Promise<Response> =>
+      withSignInHint(await handler(req), base.publicUrl);
 
   async function saveLinkFor(userId: string, url: string, note: string | null) {
     const result = await saveLinks(scopeFor(handle, userId), { text: url, note, source: "agent" });
@@ -151,25 +156,31 @@ export function createAgentApi(deps: {
 
     // ---------------------------------------------------------------- MCP (FR-AG-3)
 
-    mcp: route(agentBase, async (ctx) => {
-      let message: unknown;
-      try {
-        message = await ctx.req.json();
-      } catch {
-        return json(rpcError(null, -32700, "That was not valid JSON."), { status: 400 });
-      }
-      const userId = ctx.user.id;
-      const handleOne = (m: unknown) => handleRpc(m, userId);
-      if (Array.isArray(message)) {
-        const replies = (await Promise.all(message.map(handleOne))).filter((r) => r !== null);
-        return replies.length === 0 ? new Response(null, { status: 202 }) : json(replies);
-      }
-      const reply = await handleOne(message);
-      return reply === null ? new Response(null, { status: 202 }) : json(reply);
-    }),
+    // Both answer a missing token with a 401 that says where to sign in, which is how an
+    // agent finds the browser sign-in (see oauth-handlers.ts).
+    mcp: signInHint(
+      route(agentBase, async (ctx) => {
+        let message: unknown;
+        try {
+          message = await ctx.req.json();
+        } catch {
+          return json(rpcError(null, -32700, "That was not valid JSON."), { status: 400 });
+        }
+        const userId = ctx.user.id;
+        const handleOne = (m: unknown) => handleRpc(m, userId);
+        if (Array.isArray(message)) {
+          const replies = (await Promise.all(message.map(handleOne))).filter((r) => r !== null);
+          return replies.length === 0 ? new Response(null, { status: 202 }) : json(replies);
+        }
+        const reply = await handleOne(message);
+        return reply === null ? new Response(null, { status: 202 }) : json(reply);
+      }),
+    ),
 
-    mcpGet: route(agentBase, async () =>
-      fail(405, "method_not_allowed", "This MCP server answers POST requests only."),
+    mcpGet: signInHint(
+      route(agentBase, async () =>
+        fail(405, "method_not_allowed", "This MCP server answers POST requests only."),
+      ),
     ),
   };
 

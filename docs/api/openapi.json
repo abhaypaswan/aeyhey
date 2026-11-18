@@ -7535,6 +7535,144 @@
         }
       }
     },
+    "/oauth/register": {
+      "post": {
+        "operationId": "postOauthRegister",
+        "summary": "A coding agent registers itself to sign in through the browser (OAuth dynamic client registration). Discovery is at /.well-known/oauth-authorization-server.",
+        "tags": [
+          "agent"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request was not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Something else went wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "x-internal": true
+      }
+    },
+    "/oauth/approve": {
+      "post": {
+        "operationId": "postOauthApprove",
+        "summary": "The Allow button on /oauth/authorize: a one-time code for the agent.",
+        "tags": [
+          "agent"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request was not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Something else went wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-internal": true
+      }
+    },
+    "/oauth/token": {
+      "post": {
+        "operationId": "postOauthToken",
+        "summary": "A coding agent trades its one-time code and PKCE verifier for an agent token (OAuth, form-encoded).",
+        "tags": [
+          "agent"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request was not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Something else went wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "x-internal": true
+      }
+    },
     "/profile": {
       "get": {
         "operationId": "getProfile",

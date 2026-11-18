@@ -705,3 +705,164 @@ describe("own AI keys", () => {
     expect(((await listed.json()) as { providers: unknown[] }).providers).toHaveLength(0);
   });
 });
+
+describe("signing a coding agent in through the browser", () => {
+  const AGENT_REDIRECT = "http://127.0.0.1:53682/callback";
+
+  async function register(body: unknown): Promise<Response> {
+    return api.oauthRegister(request("POST", "/api/oauth/register", { body }));
+  }
+
+  it("tells an agent without a token where to sign in", async () => {
+    const response = await api.mcp(
+      request("POST", "/api/mcp", { body: { jsonrpc: "2.0", id: 1, method: "tools/list" } }),
+    );
+    expect(response.status).toBe(401);
+    expect(response.headers.get("www-authenticate")).toContain(
+      `resource_metadata="${BASE}/.well-known/oauth-protected-resource/api/v1/mcp"`,
+    );
+    const metadata = (await (await api.oauthAuthorizationServer()).json()) as Record<
+      string,
+      unknown
+    >;
+    expect(metadata["code_challenge_methods_supported"]).toEqual(["S256"]);
+    expect(metadata["registration_endpoint"]).toBe(`${BASE}/api/oauth/register`);
+  });
+
+  it("only registers redirects on this computer, https or an app's own scheme", async () => {
+    for (const ok of [
+      AGENT_REDIRECT,
+      "http://localhost:7777/cb",
+      "https://x.dev/cb",
+      "cursor://anysphere/cb",
+    ]) {
+      expect((await register({ redirect_uris: [ok] })).status).toBe(201);
+    }
+    for (const bad of [
+      "http://evil.example/cb",
+      "javascript:alert(1)",
+      "data:text/html,x",
+      "file:///etc",
+    ]) {
+      expect((await register({ redirect_uris: [bad] })).status).toBe(400);
+    }
+  });
+
+  it("goes from Allow to an agent token that can only add notes and links", async () => {
+    const registered = (await (
+      await register({ client_name: "Claude Code", redirect_uris: [AGENT_REDIRECT] })
+    ).json()) as { client_id: string };
+
+    const approved = await api.oauthApprove(
+      request("POST", "/api/oauth/approve", {
+        cookie,
+        origin: BASE,
+        body: {
+          clientId: registered.client_id,
+          redirectUri: AGENT_REDIRECT,
+          codeChallenge: pkceChallenge(VERIFIER),
+          state: "xyz",
+        },
+      }),
+    );
+    expect(approved.status).toBe(200);
+    const { redirectTo } = (await approved.json()) as { redirectTo: string };
+    const back = new URL(redirectTo);
+    expect(back.origin + back.pathname).toBe(AGENT_REDIRECT);
+    expect(back.searchParams.get("state")).toBe("xyz");
+
+    const exchange = (code: string) =>
+      new Request(`${BASE}/api/oauth/token`, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          code_verifier: VERIFIER,
+          redirect_uri: AGENT_REDIRECT,
+          client_id: registered.client_id,
+        }),
+      });
+    const code = back.searchParams.get("code")!;
+    const issued = await api.oauthToken(exchange(code));
+    expect(issued.status).toBe(200);
+    const token = ((await issued.json()) as { access_token: string; scope: string }).access_token;
+    expect(token.startsWith("ahy_")).toBe(true);
+
+    // Single use.
+    expect((await api.oauthToken(exchange(code))).status).toBe(400);
+
+    // It works on the MCP server, and is refused anywhere it could read.
+    const listed = await api.mcp(
+      request("POST", "/api/mcp", {
+        token,
+        body: { jsonrpc: "2.0", id: 1, method: "tools/list" },
+      }),
+    );
+    expect(listed.status).toBe(200);
+    expect((await api.listLinks(request("GET", "/api/links", { token }))).status).toBe(403);
+
+    // It shows under Signed-in apps with the agent's name, to sign out.
+    const tokens = (await (
+      await api.listTokens(request("GET", "/api/auth/tokens", { cookie }))
+    ).json()) as {
+      tokens: { name: string }[];
+    };
+    expect(tokens.tokens.map((t) => t.name)).toContain("Claude Code");
+  });
+
+  it("refuses a forged client id, and a phone's code at the agent token endpoint", async () => {
+    const registered = (await (
+      await register({ client_name: "Agent", redirect_uris: [AGENT_REDIRECT] })
+    ).json()) as { client_id: string };
+    const [payload] = registered.client_id.split(".");
+    const forged = `${payload}.not-the-signature`;
+    const approve = await api.oauthApprove(
+      request("POST", "/api/oauth/approve", {
+        cookie,
+        origin: BASE,
+        body: {
+          clientId: forged,
+          redirectUri: AGENT_REDIRECT,
+          codeChallenge: pkceChallenge(VERIFIER),
+        },
+      }),
+    );
+    expect(approve.status).toBe(400);
+
+    // A code made by the phone's Allow page would give full access, so the agent
+    // endpoint must not take it even with a matching redirect.
+    const phone = await api.connectApprove(
+      request("POST", "/api/auth/connect", {
+        cookie,
+        origin: BASE,
+        body: {
+          redirectUri: REDIRECT,
+          codeChallenge: pkceChallenge(VERIFIER),
+          codeChallengeMethod: "S256",
+          deviceName: "Phone",
+        },
+      }),
+    );
+    const phoneCode = new URL(
+      ((await phone.json()) as { redirectTo: string }).redirectTo,
+    ).searchParams.get("code")!;
+    const sneaky = (await (await register({ redirect_uris: [REDIRECT] })).json()) as {
+      client_id: string;
+    };
+    const attempt = await api.oauthToken(
+      new Request(`${BASE}/api/oauth/token`, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code: phoneCode,
+          code_verifier: VERIFIER,
+          redirect_uri: REDIRECT,
+          client_id: sneaky.client_id,
+        }),
+      }),
+    );
+    expect(attempt.status).toBe(400);
+  });
+});

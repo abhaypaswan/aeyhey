@@ -549,6 +549,32 @@ export const API_MANIFEST: readonly ManifestEntry[] = [
     tag: "agent",
     auth: "user",
   },
+  {
+    method: "POST",
+    path: "/oauth/register",
+    summary:
+      "A coding agent registers itself to sign in through the browser (OAuth dynamic client registration). Discovery is at /.well-known/oauth-authorization-server.",
+    tag: "agent",
+    auth: "none",
+    internal: true,
+  },
+  {
+    method: "POST",
+    path: "/oauth/approve",
+    summary: "The Allow button on /oauth/authorize: a one-time code for the agent.",
+    tag: "agent",
+    auth: "user",
+    internal: true,
+  },
+  {
+    method: "POST",
+    path: "/oauth/token",
+    summary:
+      "A coding agent trades its one-time code and PKCE verifier for an agent token (OAuth, form-encoded).",
+    tag: "agent",
+    auth: "none",
+    internal: true,
+  },
 
   // ------------------------------------------------------------ profile
   {

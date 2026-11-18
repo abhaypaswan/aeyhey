@@ -71,6 +71,13 @@
       "when": 1794898754033,
       "tag": "0009_building_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795033941665,
+      "tag": "0010_auth_code_scope",
+      "breakpoints": true
     }
   ]
 }

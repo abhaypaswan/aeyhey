@@ -14,6 +14,7 @@ import type { AiCallDeps } from "../ai/call";
 import { AiLimiter } from "../ai/limiter";
 import { scopeFor } from "../repos/context";
 import { createAgentApi } from "./agent-handlers";
+import { createOauthApi } from "./oauth-handlers";
 import { applyCardAction, CardActionSchema, undoCardAction } from "../sessions/actions";
 import { answerQuestion, dontKnow, revealAnswer } from "../sessions/answer";
 import { getOrBuildSession, summarizeSession } from "../sessions/service";
@@ -195,6 +196,7 @@ export function createApi(deps: ApiDeps) {
     }),
 
     ...createAgentApi({ handle, base, ai }),
+    ...createOauthApi({ handle, base, appSecret: deps.appSecret }),
 
     // ---------------------------------------------------------------- links
 
