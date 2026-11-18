@@ -1227,6 +1227,9 @@
   font-size: 0.8125rem;
   font-weight: 500;
   background: var(--color-surface);
+  /* A chip sits on a surface of the same colour in dark mode, so it needs its own edge
+     there too, or it reads as plain text. */
+  border-color: var(--color-border);
 }
 
 .quiet-pill:hover,
