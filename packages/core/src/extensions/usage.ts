@@ -29,7 +29,13 @@ export type UsageBlockReason = "no_credits" | "rate_limited" | "disabled";
 
 export type UsageGateResult =
   | { allow: true; reservationId?: string }
-  | { allow: false; reason: UsageBlockReason; message: string };
+  | {
+      allow: false;
+      reason: UsageBlockReason;
+      message: string;
+      /** Where the user can fix it, such as a billing page. Shown as a link. */
+      actionHref?: string;
+    };
 
 export interface UsageGate {
   /** Called before every AI call. allow: false stops the call. */

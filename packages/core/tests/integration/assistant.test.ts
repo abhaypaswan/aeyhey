@@ -108,6 +108,39 @@ describe("the assistant on the demo library", () => {
     await db.cleanup();
   });
 
+  it("says plainly when it is out of credits, with where to get more", async () => {
+    const outOfCredits: AssistantDeps = {
+      ...deps(mockKeys),
+      ai: {
+        ...aiDeps(mockKeys),
+        gate: {
+          async check() {
+            return {
+              allow: false as const,
+              reason: "no_credits" as const,
+              message: "You are out of credits.",
+              actionHref: "/billing",
+            };
+          },
+        },
+      },
+    };
+
+    const chat = await respond(scope, outOfCredits, { message: "tell me something about raft" });
+    expect(chat.reply).toBe("You are out of credits.");
+    expect(chat.blocked).toEqual({ message: "You are out of credits.", actionHref: "/billing" });
+
+    // Asking the library still lists what was found, under the same notice.
+    const ask = await respond(scope, outOfCredits, { message: "raft", force: "ask" });
+    expect(ask.blocked?.actionHref).toBe("/billing");
+    expect(ask.reply).toMatch(/^You are out of credits\./);
+
+    // Saving a link costs nothing, so it still works.
+    const save = await respond(scope, outOfCredits, { message: "https://example.com/new" });
+    expect(save.intent).toBe("save_links");
+    expect(save.blocked).toBeUndefined();
+  });
+
   it("saves links straight away and says so", async () => {
     const reply = await respond(scope, deps(mockKeys), { message: "https://example.com/new" });
     expect(reply.intent).toBe("save_links");

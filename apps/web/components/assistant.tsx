@@ -61,6 +61,7 @@ interface AssistantReply {
   proposal?: Proposal;
   answer?: { found: boolean; sources: Source[] };
   options?: Option[];
+  blocked?: { message: string; actionHref?: string };
 }
 
 interface DocumentPreview {
@@ -430,6 +431,9 @@ export function Assistant({
           ...(reply.options?.length ? { options: reply.options } : {}),
           ...(reply.saved && reply.saved.created > 0
             ? { links: [{ label: "Open Inbox", href: "/inbox" }] }
+            : {}),
+          ...(reply.blocked?.actionHref
+            ? { links: [{ label: "Get credits", href: reply.blocked.actionHref }] }
             : {}),
         });
         if (reply.saved && reply.saved.created > 0) router.refresh();

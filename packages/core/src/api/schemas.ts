@@ -365,6 +365,13 @@ export const LinkListItemSchema = z.object({
   tags: z.array(z.string()),
   due: dateTime.nullable(),
   lifeLeft: LifeLeftSchema,
+  waitingOnCredits: z
+    .string()
+    .nullable()
+    .optional()
+    .describe(
+      "Set while the summary waits because the AI may not run, such as being out of credits: the reason, for the user.",
+    ),
 });
 
 export const LinkListResponseSchema = z.object({

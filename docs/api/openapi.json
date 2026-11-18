@@ -1486,6 +1486,11 @@
                             "type": "number",
                             "minimum": 0,
                             "maximum": 1
+                          },
+                          "waitingOnCredits": {
+                            "description": "Set while the summary waits because the AI may not run, such as being out of credits: the reason, for the user.",
+                            "nullable": true,
+                            "type": "string"
                           }
                         },
                         "required": [

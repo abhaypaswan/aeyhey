@@ -37,6 +37,8 @@ interface InboxItem {
   savedAt: string;
   aiStatus: string;
   extractStatus: string;
+  /** The reason, while the summary waits on credits. */
+  waitingOnCredits?: string | null;
   tags: string[];
   due: string | null;
   lifeLeft?: number | null;
@@ -620,7 +622,11 @@ function InboxRow({
               </>
             ) : null}
           </span>
-          {processing ? (
+          {item.waitingOnCredits ? (
+            <span className="ml-2 shrink-0" title={item.waitingOnCredits}>
+              Waiting for credits
+            </span>
+          ) : processing ? (
             <span className="ml-2 flex shrink-0 items-center gap-1.5">
               <span className="border-muted-foreground size-2.5 animate-spin rounded-full border-[1.4px] border-t-transparent" />
               Summarising
@@ -745,6 +751,8 @@ function ReadingPane({
           <hr className="border-border my-5 border-t-[0.5px]" />
           <p className="text-[17px] leading-[1.55]">{summary}</p>
         </>
+      ) : item.waitingOnCredits ? (
+        <p className="text-muted-foreground mt-4 text-sm">{item.waitingOnCredits}</p>
       ) : item.aiStatus === "pending" ? (
         <p className="text-muted-foreground mt-4 text-sm">
           Still reading and summarising this one.

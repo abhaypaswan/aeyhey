@@ -49,6 +49,11 @@ export async function flags(): Promise<extensions.FeatureFlags> {
   return (await getRuntime()).registry.config.flags;
 }
 
+/** Where credits are bought, in an edition that has them (hosted). null otherwise. */
+export async function creditsPage(): Promise<string | null> {
+  return (await getRuntime()).registry.auth.routes?.billing ?? null;
+}
+
 /**
  * The page where the account is deleted, only where the sign-in provider can delete one
  * (hosted). Local sign-in names an account route too, but has no account to delete.

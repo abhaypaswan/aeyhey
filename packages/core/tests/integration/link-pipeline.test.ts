@@ -21,6 +21,7 @@ import {
   linkCounts,
   listLinks,
   saveLinks,
+  waitingSummaries,
 } from "../../src/repos/links";
 import { findCardForItem } from "../../src/repos/cards";
 import { scopeFor } from "../../src/repos/context";
@@ -328,6 +329,22 @@ describe("the pipeline, run by a real worker", () => {
 });
 
 describe("the job queue", () => {
+  it("says why a link's summary is waiting when its job is blocked", async () => {
+    const scope = scopeFor(db.handle, userId);
+    const saved = await saveLinks(scope, { text: "https://example.com/waiting" });
+    const linkId = saved.created[0]!.id;
+    await enqueue(db.handle, { type: "enrich_link", userId, payload: { linkId } });
+    const job = (await claimNextJob(db.handle, "worker-a"))!;
+    await blockJob(db.handle, job, "You are out of credits.");
+
+    const waiting = await waitingSummaries(scope, [linkId, "another"]);
+    expect([...waiting]).toEqual([[linkId, "You are out of credits."]]);
+
+    const page = await listLinks(scope, {});
+    const item = page.items.find((row) => row.id === linkId)!;
+    expect(item.waitingOnCredits).toBe("You are out of credits.");
+  });
+
   it("claims a job once, even when two workers ask at the same moment", async () => {
     await enqueue(db.handle, { type: "extract_link", userId, payload: { linkId: "l1" } });
 

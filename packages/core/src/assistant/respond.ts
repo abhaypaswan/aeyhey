@@ -15,6 +15,7 @@
 // reading. So the assistant still works on an instance with no AI set up.
 
 import { callAi, type AiCallDeps } from "../ai/call";
+import { AIBlockedError } from "../extensions/usage";
 import {
   ASSISTANT_INTENT_SYSTEM,
   LIBRARY_ANSWER_SYSTEM,
@@ -60,6 +61,23 @@ export interface AssistantReply {
   };
   /** Ways to carry on, each a message to send again with its intent settled. */
   options?: { label: string; message: string; force: "make_deck" | "ask" }[];
+  /**
+   * Set when the AI was not allowed to run, for example because the user is out of
+   * credits. The reply says why; actionHref is where to fix it, when there is one.
+   */
+  blocked?: { message: string; actionHref?: string };
+}
+
+/** The reply for a turn the usage gate refused. */
+function blockedReply(error: AIBlockedError): AssistantReply {
+  return {
+    intent: "unclear",
+    reply: error.message,
+    blocked: {
+      message: error.message,
+      ...(error.actionHref ? { actionHref: error.actionHref } : {}),
+    },
+  };
 }
 
 export interface AssistantDeps {
@@ -188,6 +206,19 @@ async function answerFromLibrary(
       },
     };
   } catch (error) {
+    // Out of credits: say so, and still show what was found.
+    if (error instanceof AIBlockedError) {
+      const blocked = blockedReply(error);
+      return {
+        ...blocked,
+        intent: "ask",
+        reply:
+          hits.length > 0
+            ? `${error.message} Meanwhile, here is what I found in your library:`
+            : error.message,
+        answer: { found: hits.length > 0, sources: sourcesOf(hits.slice(0, 3)) },
+      };
+    }
     // No model, or it failed: what was found is still worth showing.
     log.info("no model answer, listing what was found", {
       reason: error instanceof Error ? error.name : "unknown",
@@ -252,6 +283,8 @@ async function chat(
       })
     ).object;
   } catch (error) {
+    // Being out of credits is said plainly, not papered over with a rules answer.
+    if (error instanceof AIBlockedError) return blockedReply(error);
     log.info("no model for the chat turn, using the rules", {
       reason: error instanceof Error ? error.name : "unknown",
     });

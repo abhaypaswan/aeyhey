@@ -8,7 +8,7 @@
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { repos } from "@aeyhey/core";
-import { pageState } from "../../../lib/server";
+import { creditsPage, pageState } from "../../../lib/server";
 import { TakeawayEditor } from "../../../components/takeaway-editor";
 import { LinkActions, LinkDetails, LinkMoreMenu } from "../../../components/link-detail";
 import { getRuntime } from "../../../runtime";
@@ -36,6 +36,9 @@ export default async function LinkPage({ params }: { params: Promise<{ id: strin
 
   const link = await repos.findLinkById(scope, id);
   if (!link) notFound();
+  const waiting =
+    link.aiStatus === "pending" ? (await repos.waitingSummaries(scope, [id])).get(id) : null;
+  const credits = waiting ? await creditsPage() : null;
 
   const tags = (await repos.tagsForItems(scope, "link", [id])).get(id) ?? [];
 
@@ -118,7 +121,19 @@ export default async function LinkPage({ params }: { params: Promise<{ id: strin
             {linkTitle(link.title, link.url)}
           </h1>
 
-          {pending ? (
+          {waiting ? (
+            <p className="text-muted-foreground mt-4 text-sm">
+              {waiting}
+              {credits ? (
+                <>
+                  {" "}
+                  <a className="text-foreground font-medium underline" href={credits}>
+                    Get credits
+                  </a>
+                </>
+              ) : null}
+            </p>
+          ) : pending ? (
             <p className="text-muted-foreground mt-4 flex items-center gap-2.5 text-sm">
               <span className="border-muted-foreground size-[13px] animate-spin rounded-full border-[1.6px] border-t-transparent" />
               Still reading and summarising this one.

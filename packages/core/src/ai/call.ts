@@ -119,7 +119,7 @@ export async function callAi<N extends ContractName>(
   });
   if (!verdict.allow) {
     log.info("usage gate refused an AI call", { task, reason: verdict.reason });
-    throw new AIBlockedError(verdict.reason, verdict.message);
+    throw new AIBlockedError(verdict.reason, verdict.message, verdict.actionHref);
   }
 
   const usageId = newId();

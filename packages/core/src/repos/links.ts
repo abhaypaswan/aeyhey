@@ -176,6 +176,38 @@ export interface LinkListItem {
    * or the link is read or dropped. See lifeLeft in scheduler/expiry.ts.
    */
   lifeLeft: number | null;
+  /**
+   * Set while the summary waits because the AI was not allowed to run, such as being out
+   * of credits: the reason, in words for the user. null otherwise.
+   */
+  waitingOnCredits: string | null;
+}
+
+/**
+ * Why each of these links' summaries is waiting: the reason its blocked summary job
+ * gave. Only links still pending can be waiting, so the caller passes just those.
+ */
+export async function waitingSummaries(
+  scope: Scope,
+  linkIds: string[],
+): Promise<Map<string, string>> {
+  const waiting = new Map<string, string>();
+  if (linkIds.length === 0) return waiting;
+  const { jobs } = scope.handle.schema;
+  const rows = await scope.handle.db
+    .select({ payload: jobs.payload, lastError: jobs.lastError })
+    .from(jobs)
+    .where(
+      and(eq(jobs.userId, scope.userId), eq(jobs.type, "enrich_link"), eq(jobs.status, "blocked")),
+    );
+  const wanted = new Set(linkIds);
+  for (const row of rows) {
+    const linkId = (row.payload as Record<string, unknown> | null)?.["linkId"];
+    if (typeof linkId === "string" && wanted.has(linkId)) {
+      waiting.set(linkId, row.lastError ?? "This summary is waiting for credits.");
+    }
+  }
+  return waiting;
 }
 
 /** The link columns lifeLeft reads. */
@@ -201,7 +233,13 @@ export async function findLinkWithLifeLeft(scope: Scope, linkId: string) {
   const link = await findLinkById(scope, linkId);
   if (!link) return null;
   const settings = await loadExpirySettings(scope);
-  return { ...link, lifeLeft: linkLifeLeft(link, settings) };
+  const waiting =
+    link.aiStatus === "pending" ? await waitingSummaries(scope, [link.id]) : new Map();
+  return {
+    ...link,
+    lifeLeft: linkLifeLeft(link, settings),
+    waitingOnCredits: waiting.get(link.id) ?? null,
+  };
 }
 
 export async function listLinks(
@@ -317,6 +355,11 @@ export async function listLinks(
       ? encodeCursor([(sort === "due" ? last.due : last.savedAt)?.getTime() ?? 0, last.id])
       : null;
 
+  const waiting = await waitingSummaries(
+    scope,
+    page.filter((row) => row.aiStatus === "pending").map((row) => row.id),
+  );
+
   return {
     // The counters only feed lifeLeft; they stay off the wire so the list shape does not
     // grow by three fields nobody asked for.
@@ -324,6 +367,7 @@ export async function listLinks(
       ...row,
       status: row.status,
       tags: tagMap.get(row.id) ?? [],
+      waitingOnCredits: waiting.get(row.id) ?? null,
       lifeLeft: linkLifeLeft(
         { status: row.status, snoozeCount, ignoredCount, savedAt: row.savedAt, importedAt },
         expirySettings,
