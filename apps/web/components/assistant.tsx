@@ -18,6 +18,7 @@ import {
   Brain,
   Check,
   FileText,
+  HelpCircle,
   IdCard,
   Link2,
   ListChecks,
@@ -106,8 +107,21 @@ const INTENTS: {
   { value: "topics", label: "Questions on the topics it lists", icon: ListChecks, hue: "violet" },
   { value: "resume", label: "Interview prep from my resume", icon: IdCard, hue: "orange" },
 ];
-const EXAMPLES: { label: string; text?: string; attach?: boolean; icon: typeof Link2 }[] = [
+// `ask` sends the text at once; the others fill the box for the person to finish.
+const EXAMPLES: {
+  label: string;
+  text?: string;
+  attach?: boolean;
+  ask?: boolean;
+  icon: typeof Link2;
+}[] = [
   { label: "Paste a link", text: "https://", icon: Link2 },
+  {
+    label: "What is Aeyhey?",
+    text: "What is Aeyhey, and how can it help me?",
+    ask: true,
+    icon: HelpCircle,
+  },
   {
     label: "The solar system, stars and black holes",
     text: "The solar system, stars and black holes",
@@ -498,6 +512,7 @@ export function Assistant({
                   key={example.label}
                   onClick={() => {
                     if (example.attach) fileInput.current?.click();
+                    else if (example.ask) void send(example.text ?? "");
                     else {
                       setDraft(example.text ?? "");
                       box.current?.focus();
