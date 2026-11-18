@@ -14,7 +14,7 @@
 
 import { and, eq, sql } from "drizzle-orm";
 import type { DbHandle } from "../db/client";
-import { enqueue } from "../jobs/queue";
+import { enqueue, payloadDedupeKey } from "../jobs/queue";
 import { scopeFor } from "../repos/context";
 import { loadSettings, toCadenceSettings } from "../repos/settings";
 import { isPaused, nextSlot } from "../scheduler/cadence";
@@ -86,9 +86,7 @@ async function alreadyQueued(handle: DbHandle, key: string): Promise<boolean> {
   const rows = await handle.db
     .select({ id: jobs.id })
     .from(jobs)
-    .where(
-      and(eq(jobs.type, TOP_UP_JOB), sql`json_extract(${jobs.payload}, '$.dedupeKey') = ${key}`),
-    )
+    .where(and(eq(jobs.type, TOP_UP_JOB), sql`${payloadDedupeKey(handle)} = ${key}`))
     .limit(1);
   return rows.length > 0;
 }

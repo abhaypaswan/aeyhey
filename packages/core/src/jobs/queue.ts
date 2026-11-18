@@ -11,7 +11,7 @@
 // Failures back off exponentially. A refusal from the usage gate is not a failure: it
 // becomes `blocked`, which is retried without burning an attempt (PRD 23.4).
 
-import { and, asc, eq, inArray, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, lte, or, sql, type SQL } from "drizzle-orm";
 import { newId } from "../ids";
 import type { DbHandle } from "../db/client";
 import type { JobStatus, JobType } from "../db/types";
@@ -57,6 +57,18 @@ export function backoffMs(attempts: number): number {
   return Math.min(30_000 * 4 ** Math.max(0, attempts - 1), 60 * 60 * 1000);
 }
 
+/**
+ * The dedupe key stored in a job's payload, as SQL for whichever database this is. The
+ * payload is JSON text in SQLite and jsonb in Postgres, and the two read a field from it
+ * differently: json_extract does not exist in Postgres.
+ */
+export function payloadDedupeKey(handle: DbHandle): SQL {
+  const { jobs } = handle.schema;
+  return handle.dialect === "postgres"
+    ? sql`(${jobs.payload} ->> 'dedupeKey')`
+    : sql`json_extract(${jobs.payload}, '$.dedupeKey')`;
+}
+
 export async function enqueue(handle: DbHandle, input: EnqueueInput): Promise<string> {
   const { jobs } = handle.schema;
   const now = new Date();
@@ -69,7 +81,7 @@ export async function enqueue(handle: DbHandle, input: EnqueueInput): Promise<st
         and(
           eq(jobs.type, input.type),
           inArray(jobs.status, ["queued", "running", "blocked"]),
-          sql`json_extract(${jobs.payload}, '$.dedupeKey') = ${input.dedupeKey}`,
+          sql`${payloadDedupeKey(handle)} = ${input.dedupeKey}`,
         ),
       )
       .limit(1);
@@ -143,17 +155,21 @@ export async function claimNextJob(
 
   if (handle.dialect === "postgres") {
     // SKIP LOCKED lets several workers claim different rows at once without blocking.
+    // Dates go in as ISO text cast to timestamptz: a raw query hands its parameters to
+    // the driver untyped, and postgres.js cannot send a bare Date that way.
+    const at = sql`${now.toISOString()}::timestamptz`;
+    const stale = sql`${staleBefore.toISOString()}::timestamptz`;
     const rows = (await (
       handle.db as unknown as {
         execute(q: unknown): Promise<{ rows?: JobRecord[] } | JobRecord[]>;
       }
     ).execute(sql`
-      UPDATE jobs SET status = 'running', locked_at = ${now}, locked_by = ${workerId},
-        attempts = attempts + 1, updated_at = ${now}
+      UPDATE jobs SET status = 'running', locked_at = ${at}, locked_by = ${workerId},
+        attempts = attempts + 1, updated_at = ${at}
       WHERE id = (
         SELECT id FROM jobs
-        WHERE (status IN ('queued','blocked') AND run_after <= ${now})
-           OR (status = 'running' AND locked_at <= ${staleBefore})
+        WHERE (status IN ('queued','blocked') AND run_after <= ${at})
+           OR (status = 'running' AND locked_at <= ${stale})
         ORDER BY run_after ASC
         LIMIT 1
         FOR UPDATE SKIP LOCKED

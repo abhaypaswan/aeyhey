@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Link storage, scoped by user (PRD 8.1, 10, 11).
 
-import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lt, or, sql } from "drizzle-orm";
 import { newId } from "../ids";
 import { normalizeUrl } from "../links/normalize";
 import { extractUrls } from "../links/extract-urls";
@@ -259,7 +259,7 @@ export async function listLinks(
     // skip a row.
     conditions.push(
       sort === "oldest"
-        ? or(sql`${column} > ${asDate}`, and(eq(column, asDate), sql`${links.id} > ${cursorId}`))!
+        ? or(gt(column, asDate), and(eq(column, asDate), gt(links.id, cursorId)))!
         : or(lt(column, asDate), and(eq(column, asDate), lt(links.id, cursorId)))!,
     );
   }
