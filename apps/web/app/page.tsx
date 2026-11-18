@@ -203,13 +203,9 @@ export default async function HomePage({
               </section>
             </>
           )}
-        </div>
-
-        <aside className="flex min-w-0 flex-col gap-8 lg:pt-1">
-          <Assistant initialText={say} className="h-[32rem] lg:h-[min(38rem,calc(100dvh-9rem))]" />
 
           {today.queue.length > 0 ? (
-            <section aria-label="Up next">
+            <section aria-label="Up next" className="mt-[30px] lg:mt-12">
               <div className="flex items-baseline justify-between">
                 <h2 className="font-display text-[17px] font-[640] tracking-[-0.006em] lg:text-xl">
                   Up next
@@ -256,6 +252,15 @@ export default async function HomePage({
               </ul>
             </section>
           ) : null}
+        </div>
+
+        {/* The assistant has the right column to itself, and stays in view while the
+            left one scrolls. */}
+        <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start lg:pt-1">
+          <Assistant
+            initialText={say}
+            className="h-[32rem] lg:h-[calc(100dvh-7rem)] lg:max-h-[48rem]"
+          />
         </aside>
       </div>
 
