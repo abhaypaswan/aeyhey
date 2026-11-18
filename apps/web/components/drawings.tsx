@@ -7,7 +7,7 @@
 // carries its number in words for anyone who cannot see it.
 
 import type { CSSProperties } from "react";
-import { BookOpen, Flame, IdCard, Lightbulb, NotebookPen } from "lucide-react";
+import { BookOpen, Check, Flame, IdCard, Lightbulb, NotebookPen } from "lucide-react";
 import { mix, siteKey, soft, strong, hueFor, type Hue } from "../lib/hue";
 import { cx } from "./ui";
 
@@ -58,6 +58,50 @@ export function CardFan({ count, scale = 1 }: { count: number; scale?: number })
           </span>
         );
       })}
+    </span>
+  );
+}
+
+/**
+ * The session's cards squared away in a neat stack, the top one ticked: nothing is due.
+ * Drawn where the fan of cards sits when a session is ready.
+ */
+export function CardsDone({ scale = 1 }: { scale?: number }) {
+  const green = strong("green");
+  return (
+    <span
+      aria-hidden="true"
+      className="relative block shrink-0"
+      style={{ width: 74 * scale, height: 62 * scale }}
+    >
+      {[2, 1, 0].map((layer) => (
+        <span
+          key={layer}
+          className="absolute grid place-items-center"
+          style={{
+            width: 38 * scale,
+            height: 48 * scale,
+            left: `calc(50% - ${19 * scale}px + ${layer * 6 * scale}px)`,
+            bottom: 4 * scale + layer * 4 * scale,
+            borderRadius: 7 * scale,
+            border: `${1.5 * scale}px solid color-mix(in srgb, ${CANVAS} 90%, transparent)`,
+            background:
+              layer === 0
+                ? mix("var(--color-surface)", green, 0.16, 0.26)
+                : mix("var(--color-surface)", green, 0.06 + layer * 0.03, 0.1 + layer * 0.04),
+            zIndex: 3 - layer,
+          }}
+        >
+          {layer === 0 ? (
+            <span
+              className="grid place-items-center rounded-full"
+              style={{ width: 22 * scale, height: 22 * scale, background: green }}
+            >
+              <Check size={14 * scale} strokeWidth={3} color="white" />
+            </span>
+          ) : null}
+        </span>
+      ))}
     </span>
   );
 }

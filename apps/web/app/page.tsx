@@ -10,11 +10,12 @@
 
 import { redirect } from "next/navigation";
 import { repos, sessions } from "@aeyhey/core";
-import { Bell, BellOff, ChevronRight, Play } from "lucide-react";
+import { Bell, BellOff, CalendarDays, ChevronRight, Play } from "lucide-react";
 import { pageState } from "../lib/server";
 import { LinkButton, cx } from "../components/ui";
 import {
   CardFan,
+  CardsDone,
   DayBars,
   DeckFan,
   LinkGlasses,
@@ -23,12 +24,15 @@ import {
 } from "../components/drawings";
 import { Assistant } from "../components/assistant";
 import { DeckRow } from "../components/deck-row";
+import { IdeaTiles } from "../components/ideas";
 import { KnowledgeMap } from "../components/knowledge-map";
 import { loadMapData } from "../lib/map-data";
 import { hostOf, linkTitle, midSentence, pluralize } from "../lib/format";
 import { strong } from "../lib/hue";
 
 export const dynamic = "force-dynamic";
+
+const MAP_MIN_ITEMS = 6;
 
 export default async function HomePage({
   searchParams,
@@ -109,7 +113,11 @@ export default async function HomePage({
                 <span className="origin-right lg:scale-[1.35]">
                   <CardFan count={today.sessionSize} />
                 </span>
-              ) : null}
+              ) : nothingSaved ? null : (
+                <span className="origin-right lg:scale-[1.35]">
+                  <CardsDone />
+                </span>
+              )}
             </div>
             <p className="text-muted-foreground mt-2.5 max-w-[46ch] text-[15.5px] leading-[1.45] lg:mt-4 lg:text-lg">
               {body}
@@ -139,6 +147,16 @@ export default async function HomePage({
                 />
               </div>
             )}
+
+            {/* Nothing to review: rather than an empty page, a few things to start. */}
+            {due ? null : (
+              <div className="mt-7 lg:mt-9">
+                <h2 className="text-muted-foreground mb-3 text-sm font-semibold">
+                  {nothingSaved ? "Start with one of these" : "Or start something new"}
+                </h2>
+                <IdeaTiles />
+              </div>
+            )}
           </section>
 
           {nothingSaved ? null : (
@@ -163,9 +181,10 @@ export default async function HomePage({
                     )
                   }
                 />
+                <ShelfDivider />
                 <ShelfItem
                   href="/decks"
-                  className="flex-[4] border-l-[0.5px]"
+                  className="flex-[4]"
                   art={<DeckFan decks={today.questionDeckCount} />}
                   title={
                     questionTotal === 0 ? "No questions" : pluralize(questionTotal, "question")
@@ -176,8 +195,9 @@ export default async function HomePage({
                       : `in ${pluralize(today.questionDeckCount, "deck")}`
                   }
                 />
+                <ShelfDivider />
                 <ShelfItem
-                  className="flex-[4] border-l-[0.5px]"
+                  className="flex-[4]"
                   art={<StreakFlame days={streak} />}
                   title={streak === 0 ? "No streak" : "day streak"}
                   caption={streak === 0 ? "do a session" : "keep it going"}
@@ -188,13 +208,24 @@ export default async function HomePage({
                 <h2 className="font-display text-[17px] font-[640] tracking-[-0.006em] lg:text-xl">
                   This week
                 </h2>
-                <div className="mt-3.5 lg:mt-5">
-                  <DayBars
-                    days={today.week}
-                    height={96}
-                    label={`Cards due over the next 7 days: ${today.week.map((row) => row.count).join(", ")}.`}
-                  />
-                </div>
+                {today.week.some((row) => row.count > 0) ? (
+                  <div className="mt-3.5 lg:mt-5">
+                    <DayBars
+                      days={today.week}
+                      height={96}
+                      label={`Cards due over the next 7 days: ${today.week.map((row) => row.count).join(", ")}.`}
+                    />
+                  </div>
+                ) : (
+                  // Seven bars of zero say nothing, so say it in words.
+                  <p className="border-border text-muted-foreground mt-3.5 flex items-center gap-3 rounded-2xl border border-dashed px-4 py-4 text-[14.5px] leading-[1.4] lg:mt-5">
+                    <CalendarDays size={20} aria-hidden="true" className="shrink-0" />
+                    <span>
+                      Nothing comes due in the next 7 days. Anything you save or learn will show up
+                      here.
+                    </span>
+                  </p>
+                )}
               </section>
             </>
           )}
@@ -287,7 +318,9 @@ export default async function HomePage({
       </div>
 
       {/* Everything you keep, as one picture: on a wide screen, where there is room for it. */}
-      {nothingSaved ? null : (
+      {/* With only a handful of things the map is a few dots in an empty box, so it waits
+          until there is something to draw. */}
+      {map.items.length < MAP_MIN_ITEMS ? null : (
         <div className="mt-14 hidden lg:block">
           <KnowledgeMap data={map} embedded />
         </div>
@@ -320,6 +353,11 @@ function ReminderLine({
       </a>
     </p>
   );
+}
+
+/** A hairline between two shelf items, kept apart from them so a hover stays round. */
+function ShelfDivider() {
+  return <span aria-hidden="true" className="bg-border my-1.5 w-[0.5px] shrink-0" />;
 }
 
 function ShelfItem({

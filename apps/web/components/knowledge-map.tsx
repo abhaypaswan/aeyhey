@@ -30,6 +30,7 @@ import {
   SegmentedControlItem,
 } from "@ui-sdk/react/segmented-control";
 import { Switch, SwitchThumb } from "@ui-sdk/react/switch";
+import { pluralize } from "../lib/format";
 import { hueFor, soft, strong } from "../lib/hue";
 import { cx } from "./ui";
 
@@ -534,7 +535,8 @@ export function KnowledgeMap({
             <h1 className="font-display text-[30px] font-[640] leading-[1.1]">Map</h1>
           )}
           <p className="text-muted-foreground mt-2 text-[15px] leading-[1.45]">
-            {questionCount} questions and {linkCount} links across {hubs.length} subjects.{" "}
+            {pluralize(questionCount, "question")} and {pluralize(linkCount, "link")} across{" "}
+            {pluralize(hubs.length, "subject")}.{" "}
             {bridges.length > 0
               ? `${bridges.length} ${bridges.length === 1 ? "subject joins" : "subjects join"} what you read to what you are asked.`
               : ""}

@@ -1660,3 +1660,26 @@ a.home-cta {
 .pill-segments [data-slot="segmented-control-indicator"] {
   border-radius: 999px;
 }
+
+/* The "what to do next" tiles on Home and the empty session: a wash of their colour that
+   deepens a little under the pointer. */
+.idea-tile {
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+.idea-tile:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px -10px color-mix(in srgb, var(--color-foreground) 35%, transparent);
+}
+.idea-tile:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .idea-tile,
+  .idea-tile:hover {
+    transition: none;
+    transform: none;
+  }
+}

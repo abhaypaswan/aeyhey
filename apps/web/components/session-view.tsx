@@ -31,7 +31,6 @@ import {
   Clock,
   History,
   Hourglass,
-  PartyPopper,
   SkipForward,
   Star,
   Trash2,
@@ -47,7 +46,8 @@ import {
 import { apiClient, ApiRequestError } from "../lib/client";
 import { hostOf, midSentence, pluralize, relativeDate } from "../lib/format";
 import { hueFor, mix, siteKey, soft, strong, type Hue } from "../lib/hue";
-import { DifficultyMark, SiteMark } from "./drawings";
+import { CardsDone, DashedCard, DifficultyMark, SiteMark } from "./drawings";
+import { IdeaTiles } from "./ideas";
 import { Kbd, cx } from "./ui";
 
 interface LinkCardView {
@@ -1115,7 +1115,11 @@ function EmptySession({
   const view =
     reason === "paused"
       ? {
-          icon: CirclePause,
+          art: (
+            <span className="bg-primary-soft grid place-items-center rounded-[22px] p-[18px]">
+              <CirclePause size={32} aria-hidden="true" />
+            </span>
+          ),
           title: "Reminders are paused",
           body: "You can still do a few cards early.",
           action: (
@@ -1126,22 +1130,23 @@ function EmptySession({
         }
       : reason === "nothing_saved"
         ? {
-            icon: BookmarkPlus,
-            title: "Nothing saved yet",
-            body: "Save a few links or make a deck of questions, and your first session will be here.",
-            action: (
-              <div className="flex gap-2.5">
-                <a href="/?say=https%3A%2F%2F" className="session-primary px-6">
-                  Add links
-                </a>
-                <a href="/?say=Make%20a%20deck%20on%20" className="quiet-pill session-quiet px-6">
-                  New deck
-                </a>
-              </div>
+            art: (
+              <span className="flex items-end gap-2" aria-hidden="true">
+                <DashedCard color="var(--color-subtle-foreground)" width={46} height={60} />
+                <DashedCard color="var(--color-primary)" width={54} height={70}>
+                  <BookmarkPlus size={22} />
+                </DashedCard>
+                <DashedCard color="var(--color-subtle-foreground)" width={46} height={60} />
+              </span>
             ),
+            // Also what someone sees once every link is read and there are no questions, so
+            // it must not claim they never saved anything.
+            title: "Nothing to review yet",
+            body: "Save a link or make a deck of questions, and your next session will be here.",
+            action: <IdeaTiles className="w-full max-w-2xl" />,
           }
         : {
-            icon: PartyPopper,
+            art: <CardsDone scale={1.5} />,
             title: "You are all caught up",
             body: `Next session ${midSentence(nextSessionLabel)}.`,
             action: (
@@ -1153,12 +1158,12 @@ function EmptySession({
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 py-16 text-center">
-      <span className="bg-primary-soft grid place-items-center rounded-[22px] p-[18px]">
-        <view.icon size={32} aria-hidden="true" />
-      </span>
-      <h1 className="font-display text-[22px] font-bold">{view.title}</h1>
-      <p className="text-muted-foreground max-w-sm text-[15px]">{view.body}</p>
-      <div className="mt-1">{view.action}</div>
+      <div className="mb-2">{view.art}</div>
+      <h1 className="font-display text-[28px] font-[650] leading-[1.1] tracking-[-0.015em] lg:text-[34px]">
+        {view.title}
+      </h1>
+      <p className="text-muted-foreground max-w-md text-[15.5px] leading-[1.5]">{view.body}</p>
+      <div className="mt-3 flex w-full justify-center">{view.action}</div>
       <a href="/" className="text-muted-foreground text-sm underline">
         Back to Home
       </a>
