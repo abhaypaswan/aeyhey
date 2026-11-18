@@ -81,6 +81,22 @@ test.describe("the command palette", () => {
   });
 });
 
+test.describe("connecting a coding agent", () => {
+  test("the setup is public, as a page and as Markdown for the agent", async ({
+    page,
+    request,
+  }) => {
+    const markdown = await request.get("/agents.md");
+    expect(markdown.status()).toBe(200);
+    expect(markdown.headers()["content-type"]).toContain("text/markdown");
+    expect(await markdown.text()).toContain("/api/v1/mcp");
+
+    await page.goto("/agents");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/connect a coding agent/i);
+    await expect(page.getByRole("heading", { name: "Codex" })).toBeVisible();
+  });
+});
+
 test.describe("settings controls", () => {
   test("the tabs are real tabs, with arrow keys", async ({ page }) => {
     await page.goto("/settings");

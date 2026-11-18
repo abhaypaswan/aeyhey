@@ -189,7 +189,7 @@ export function createAgentApi(deps: {
           capabilities: { tools: {} },
           serverInfo: { name: "aeyhey", version: "1.0.0" },
           instructions:
-            "Aeyhey keeps a short daily journal of the person's work. Call highlight only when the person asks you to log, note or remember something for their day, or when they reach a real goal; never for every task. Call save_link when they ask to save a link to read later.",
+            "Aeyhey helps the person remember what they read and learn, and writes a short summary of each day's work from what you note. Call highlight with one short past-tense line only when the person asks you to log, note or remember something, or when they reach a real goal; never for every task, and never with code or secrets. Call save_link when they ask to save a link to read later.",
         });
       case "ping":
         return rpcResult(id, {});
@@ -243,7 +243,7 @@ const MCP_TOOLS = [
   {
     name: "highlight",
     description:
-      "Keep one line in the person's Aeyhey journal for today. Use it only when they ask to log or remember something, or when a real goal is reached. One short line, past tense, no code or secrets.",
+      "Note one line about today's work in the person's Aeyhey. Use it only when they ask to log or remember something, or when a real goal is reached. One short line, past tense, no code or secrets.",
     inputSchema: {
       type: "object",
       properties: {

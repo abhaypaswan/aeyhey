@@ -125,7 +125,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "building",
     ],
     answer:
-      "Connect a coding agent such as Claude Code in Settings, under Agents, and it reports each finished session to Aeyhey. Once a day I write a short summary of what you built. It shows on your Profile only if you turn that on; the session logs themselves never show.",
+      "Connect a coding agent such as Claude Code, Codex or Cursor in Settings, under Agents: make a token and paste the prompt it gives you into your agent, and it reads the setup page and connects itself. Once a day I write a short summary of what you built. It shows on your Profile only if you turn that on; the session logs themselves never show.",
   },
   {
     id: "search",
