@@ -34,6 +34,9 @@ const CONTRACT_TASK: Record<ContractName, AITask> = {
   document_intent: "profile",
   // Summing up a day of work is summary work, so it bills like a link summary.
   agent_digest: "summary",
+  // Reading a message and answering from a few saved pieces: short, summary-sized work.
+  assistant_intent: "summary",
+  library_answer: "summary",
 };
 
 export interface AiCallDeps {

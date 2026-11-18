@@ -125,6 +125,7 @@ import { newId } from "../ids";
 import { fail, json, route, parseListQuery, type RouteContext } from "./respond";
 import * as schemas from "./schemas";
 import { deleteAllData } from "./data";
+import { respond as respondToMessage } from "../assistant/respond";
 import { createLogger } from "../logger";
 
 const log = createLogger("api");
@@ -156,28 +157,53 @@ export function createApi(deps: ApiDeps) {
   const redirectUris = parseRedirectList(env.API_REDIRECT_URIS);
   const scope = (ctx: RouteContext<unknown>) => scopeFor(handle, ctx.user.id);
 
+  /**
+   * Saves the links in some text and queues each new one to be read: one extract job per
+   * link, and the enrich job is queued by the extract handler, so a slow fetch never
+   * blocks a summary that is ready. Shared by the add links route and the assistant.
+   */
+  async function saveAndQueue(userId: string, input: Parameters<typeof saveLinks>[1]) {
+    const result = await saveLinks(scopeFor(handle, userId), input);
+    for (const link of result.created) {
+      await enqueue(handle, {
+        type: "extract_link",
+        userId,
+        payload: { linkId: link.id },
+        dedupeKey: `extract:${link.id}`,
+      });
+    }
+    return result;
+  }
+
   return {
+    // ---------------------------------------------------------------- assistant
+
+    assistant: route({ ...base, schema: schemas.AssistantSchema }, async (ctx) => {
+      const reply = await respondToMessage(
+        scope(ctx),
+        {
+          ai,
+          saveLinks: (text) => saveAndQueue(ctx.user.id, { text, note: null, source: "paste" }),
+        },
+        {
+          message: ctx.body.message,
+          ...(ctx.body.force ? { force: ctx.body.force } : {}),
+          ...(ctx.body.history ? { history: ctx.body.history } : {}),
+        },
+      );
+      return json(reply);
+    }),
+
     ...createAgentApi({ handle, base, ai }),
 
     // ---------------------------------------------------------------- links
 
     addLinks: route({ ...base, schema: schemas.AddLinksSchema }, async (ctx) => {
-      const result = await saveLinks(scope(ctx), {
+      const result = await saveAndQueue(ctx.user.id, {
         text: ctx.body.text,
         note: ctx.body.note ?? null,
         source: ctx.body.source ?? "paste",
       });
-
-      // One extract job per new link. The enrich job is queued by the extract handler,
-      // so a slow fetch never blocks a summary that is ready.
-      for (const link of result.created) {
-        await enqueue(handle, {
-          type: "extract_link",
-          userId: ctx.user.id,
-          payload: { linkId: link.id },
-          dedupeKey: `extract:${link.id}`,
-        });
-      }
 
       return json({
         created: result.created.length,

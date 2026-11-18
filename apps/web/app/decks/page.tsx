@@ -48,7 +48,13 @@ export default async function DecksPage() {
             questions with model answers, and new ones arrive before each reminder.
           </p>
           <div className="mt-[22px]">
-            <LinkButton href="/decks/new" tone="primary" size="lg" icon={Plus} className="home-cta">
+            <LinkButton
+              href="/?say=Make%20a%20deck%20on%20"
+              tone="primary"
+              size="lg"
+              icon={Plus}
+              className="home-cta"
+            >
               New deck
             </LinkButton>
           </div>
@@ -77,7 +83,7 @@ export default async function DecksPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-[22px] pb-20 pt-2 sm:px-6 lg:px-8 lg:pt-8">
       <a
-        href="/decks/new"
+        href="/?say=Make%20a%20deck%20on%20"
         className="group -mx-2 flex items-center gap-3.5 rounded-[10px] px-2 py-3 transition-colors lg:max-w-md lg:hover:bg-[color-mix(in_srgb,var(--color-quiet)_60%,transparent)]"
       >
         <span className="grid h-12 w-10 shrink-0 place-items-center">

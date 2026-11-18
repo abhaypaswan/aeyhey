@@ -181,6 +181,15 @@ export const API_MANIFEST: readonly ManifestEntry[] = [
   },
   {
     method: "POST",
+    path: "/assistant",
+    summary:
+      "One message to the assistant. Links in it are saved; a request for questions comes back as a deck proposal to confirm through /question-sources/topics; a question is answered from the user's own library, with sources; anything ambiguous comes back with options to send again with force set.",
+    tag: "links",
+    auth: "user",
+    body: schemas.AssistantSchema,
+  },
+  {
+    method: "POST",
     path: "/links",
     summary: "Save links. Any text works: every URL in it is saved.",
     tag: "links",

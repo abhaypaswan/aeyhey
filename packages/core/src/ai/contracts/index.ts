@@ -205,6 +205,51 @@ export const AgentDigestSchema = z.object({
 
 export type AgentDigestOutput = z.infer<typeof AgentDigestSchema>;
 
+// ---------------------------------------------------------------- assistant
+
+export const ASSISTANT_INTENTS = ["save_links", "make_deck", "ask", "unclear"] as const;
+
+/**
+ * What someone wants from one message to the assistant. The app does the work; this only
+ * says which work, with the details it needs and a line to say back.
+ */
+export const AssistantIntentSchema = z.object({
+  /**
+   * save_links: they gave links to keep. make_deck: they want questions on some topics.
+   * ask: they asked something about what they saved or are learning. unclear: it could
+   * reasonably be more than one of these, so the app asks.
+   */
+  intent: z.enum(ASSISTANT_INTENTS),
+  /** One or two short sentences to say back, addressed to them. */
+  reply: tidy(300),
+  /** For make_deck: the topics, as short names. Empty otherwise. */
+  topics: z.array(tidy(80)).max(10).default([]),
+  /** For make_deck, when they said: how deep to go. */
+  level: z.enum(["beginner", "intermediate", "advanced"]).nullable().default(null),
+  /** For make_deck, when they said: for learning, for interviews, or both. */
+  style: z.enum(["study", "interview", "mixed"]).nullable().default(null),
+  /** For ask: the words to search their library with. */
+  query: z.string().max(200).default(""),
+});
+
+export type AssistantIntentOutput = z.infer<typeof AssistantIntentSchema>;
+
+/** An answer to a question about someone's own library, from the pieces of it found. */
+export const LibraryAnswerSchema = z.object({
+  /** Plain text, a few short paragraphs at most. */
+  answer: z
+    .string()
+    .max(6_000)
+    .transform((s) => clampWords(s.trim(), 1_500))
+    .refine((s) => s.length > 0, "This cannot be empty."),
+  /** The ids of the pieces the answer actually used, from the ones given. */
+  cited: z.array(z.string().max(80)).max(8).default([]),
+  /** False when nothing given answers the question. */
+  found: z.boolean(),
+});
+
+export type LibraryAnswerOutput = z.infer<typeof LibraryAnswerSchema>;
+
 export const CONTRACTS = {
   link_summary: LinkSummarySchema,
   resume_profile: ResumeProfileSchema,
@@ -212,6 +257,8 @@ export const CONTRACTS = {
   grade_answer: GradeAnswerSchema,
   document_intent: DocumentIntentSchema,
   agent_digest: AgentDigestSchema,
+  assistant_intent: AssistantIntentSchema,
+  library_answer: LibraryAnswerSchema,
 } as const;
 
 export type ContractName = keyof typeof CONTRACTS;
@@ -227,4 +274,6 @@ export const TOKEN_BUDGETS: Record<
   grade_answer: { maxOutputTokens: 900, timeoutMs: 30_000, ollamaTimeoutMs: 90_000 },
   document_intent: { maxOutputTokens: 600, timeoutMs: 30_000, ollamaTimeoutMs: 90_000 },
   agent_digest: { maxOutputTokens: 1_400, timeoutMs: 30_000, ollamaTimeoutMs: 90_000 },
+  assistant_intent: { maxOutputTokens: 500, timeoutMs: 20_000, ollamaTimeoutMs: 60_000 },
+  library_answer: { maxOutputTokens: 1_200, timeoutMs: 30_000, ollamaTimeoutMs: 90_000 },
 };

@@ -10,7 +10,7 @@
 
 import { redirect } from "next/navigation";
 import { repos, sessions } from "@aeyhey/core";
-import { Bell, BellOff, ChevronRight, Layers, Link2, Play } from "lucide-react";
+import { Bell, BellOff, ChevronRight, Play } from "lucide-react";
 import { pageState } from "../lib/server";
 import { LinkButton, cx } from "../components/ui";
 import {
@@ -21,7 +21,7 @@ import {
   SiteMark,
   StreakFlame,
 } from "../components/drawings";
-import { PasteBox } from "../components/paste-box";
+import { Assistant } from "../components/assistant";
 import { KnowledgeMap } from "../components/knowledge-map";
 import { loadMapData } from "../lib/map-data";
 import { hostOf, midSentence, pluralize } from "../lib/format";
@@ -29,7 +29,14 @@ import { strong } from "../lib/hue";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  // ?say= opens Home with the assistant's box already filled, for the old routes that
+  // used to add things (/add, /decks/new) and for anything that links here with a request.
+  const say = (await searchParams)["say"] ?? "";
   const state = await pageState();
   if (state.state === "needs_setup") redirect("/setup");
   if (state.state === "needs_login") redirect("/login");
@@ -75,7 +82,7 @@ export default async function HomePage() {
   const body = due
     ? `${waitingNow} ${waitingCount === 1 ? "is" : "are"} waiting. About ${pluralize(minutes, "minute")}, one card at a time.`
     : nothingSaved
-      ? "A link you meant to read, a topic you are learning, a book, your notes or your resume. Aeyhey turns it into a few cards at a time, and keeps bringing each one back until you have it."
+      ? "Paste a link you meant to read, name a topic you are learning, attach a book, your notes or your resume, or ask about anything. The assistant works out the rest, and Aeyhey keeps bringing each thing back until you have it."
       : paused
         ? "Reminders are paused. You can still do a few cards."
         : `Nothing is due. Next session ${nextSession}.`;
@@ -127,7 +134,6 @@ export default async function HomePage() {
                 />
               </div>
             )}
-            {nothingSaved ? <StartChoices /> : null}
 
             {journalDrafts > 0 ? (
               <a
@@ -200,7 +206,7 @@ export default async function HomePage() {
         </div>
 
         <aside className="flex min-w-0 flex-col gap-8 lg:pt-1">
-          <PasteBox />
+          <Assistant initialText={say} className="h-[32rem] lg:h-[min(38rem,calc(100dvh-9rem))]" />
 
           {today.queue.length > 0 ? (
             <section aria-label="Up next">
@@ -329,58 +335,5 @@ function ShelfItem({
     </a>
   ) : (
     <div className={shared}>{inner}</div>
-  );
-}
-
-/**
- * A first visit's two ways in. Links were where Aeyhey started, and a deck of questions
- * is the other half: from topics, a book, notes, a syllabus or a resume.
- */
-function StartChoices() {
-  const choices = [
-    {
-      href: "/add",
-      icon: Link2,
-      title: "Save links",
-      body: "Paste the articles, videos and threads you meant to get back to. Each gets a short summary.",
-      cta: "Add links",
-    },
-    {
-      href: "/decks/new",
-      icon: Layers,
-      title: "Make a deck",
-      body: "From a few topics, a book or your notes, a syllabus or your resume. Aeyhey writes questions with worked answers.",
-      cta: "New deck",
-    },
-  ];
-  return (
-    <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:mt-8 lg:gap-4">
-      {choices.map((choice, index) => (
-        <a
-          key={choice.href}
-          href={choice.href}
-          className="start-choice group flex flex-col gap-2 rounded-[22px] p-5 transition-colors"
-        >
-          <span
-            className={cx(
-              "grid size-10 place-items-center rounded-full",
-              index === 0 ? "bg-primary text-primary-foreground" : "bg-primary-soft text-primary",
-            )}
-          >
-            <choice.icon size={19} aria-hidden="true" />
-          </span>
-          <span className="font-display mt-1 text-xl font-semibold">{choice.title}</span>
-          <span className="text-muted-foreground text-[14.5px] leading-[1.45]">{choice.body}</span>
-          <span className="text-primary mt-auto flex items-center gap-1 pt-2 text-sm font-semibold">
-            {choice.cta}
-            <ChevronRight
-              size={16}
-              aria-hidden="true"
-              className="transition-transform group-hover:translate-x-0.5"
-            />
-          </span>
-        </a>
-      ))}
-    </div>
   );
 }

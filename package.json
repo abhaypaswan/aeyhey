@@ -1,6 +1,6 @@
 {
   "name": "aeyhey-workspace",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "description": "Aeyhey: spaced repetition for your saved links and your interview prep.",
@@ -29,9 +29,9 @@
     "api:spec": "pnpm --filter @aeyhey/core api:spec",
     "check:spdx": "node scripts/check-spdx.mjs",
     "check:all": "pnpm format:check && pnpm lint && pnpm check:spdx && pnpm typecheck && pnpm test",
-    "demo:local": "mkdir -p data/demo && DEMO_MODE=true AUTH_MODE=none DATA_DIR=$PWD/data/demo DATABASE_URL=file:$PWD/data/demo/aeyhey.db PUBLIC_URL=http://localhost:3000 pnpm --filter @aeyhey/core demo:seed && DEMO_MODE=true AUTH_MODE=none DATA_DIR=$PWD/data/demo DATABASE_URL=file:$PWD/data/demo/aeyhey.db PUBLIC_URL=http://localhost:3000 pnpm --filter @aeyhey/web exec next dev --port 3000",
+    "demo:local": "mkdir -p data/demo && DEMO_MODE=true AUTH_MODE=none DATA_DIR=$PWD/data/demo DATABASE_URL=file:$PWD/data/demo/aeyhey.db PUBLIC_URL=http://localhost:3000 pnpm --filter @aeyhey/core demo:seed && DEMO_MODE=true AUTH_MODE=none DATA_DIR=$PWD/data/demo DATABASE_URL=file:$PWD/data/demo/aeyhey.db PUBLIC_URL=http://localhost:3000 sh -c 'trap \"kill 0\" EXIT; pnpm --filter @aeyhey/web worker & pnpm --filter @aeyhey/web exec next dev --port 3000'",
     "demo:local:reset": "mkdir -p data/demo && DEMO_MODE=true AUTH_MODE=none DATA_DIR=$PWD/data/demo DATABASE_URL=file:$PWD/data/demo/aeyhey.db PUBLIC_URL=http://localhost:3000 pnpm --filter @aeyhey/core demo:reset",
-    "local:fresh": "mkdir -p data/fresh && DATA_DIR=$PWD/data/fresh DATABASE_URL=file:$PWD/data/fresh/aeyhey.db PUBLIC_URL=http://localhost:3000 pnpm --filter @aeyhey/web migrate && DATA_DIR=$PWD/data/fresh DATABASE_URL=file:$PWD/data/fresh/aeyhey.db PUBLIC_URL=http://localhost:3000 pnpm --filter @aeyhey/web exec next dev --port 3000",
+    "local:fresh": "mkdir -p data/fresh && DATA_DIR=$PWD/data/fresh DATABASE_URL=file:$PWD/data/fresh/aeyhey.db PUBLIC_URL=http://localhost:3000 pnpm --filter @aeyhey/web migrate && DATA_DIR=$PWD/data/fresh DATABASE_URL=file:$PWD/data/fresh/aeyhey.db PUBLIC_URL=http://localhost:3000 sh -c 'trap \"kill 0\" EXIT; pnpm --filter @aeyhey/web worker & pnpm --filter @aeyhey/web exec next dev --port 3000'",
     "local:fresh:reset": "rm -rf data/fresh && echo \"data/fresh cleared. pnpm local:fresh starts a brand-new instance.\""
   },
   "devDependencies": {

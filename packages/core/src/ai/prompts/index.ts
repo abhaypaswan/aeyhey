@@ -5,3 +5,4 @@ export * from "./resume-profile";
 export * from "./generate-questions";
 export * from "./grade-answer";
 export * from "./document-intent";
+export * from "./assistant";

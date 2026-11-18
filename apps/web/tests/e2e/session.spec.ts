@@ -135,22 +135,29 @@ test.describe("the demo flow", () => {
     await expect(page.getByText("Model answer", { exact: true }).first()).toBeVisible();
   });
 
-  test("adding links counts them before saving", async ({ page }) => {
-    await page.goto("/add");
+  test("the assistant saves a link, proposes a deck and answers from the library", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const assistant = page.getByRole("region", { name: "Assistant" });
+    const box = assistant.getByRole("textbox", { name: /message the assistant/i });
 
-    // Unique URLs per run: both Playwright projects share one database, and a link that
-    // is already saved reports a duplicate rather than a save.
-    const run = Date.now();
-    const box = page.getByPlaceholder(/https:\/\/example\.com/);
-    await box.fill(
-      `https://example.com/e2e-${run}-one\nhttps://example.com/e2e-${run}-two\nnot a link at all`,
-    );
+    // A link is saved at once. Unique per run: both projects share one database.
+    await box.fill(`https://example.com/e2e-${Date.now()}`);
+    await box.press("Enter");
+    await expect(assistant.getByText(/Saved 1 link/)).toBeVisible();
 
-    // The live count is what makes a big paste feel safe.
-    await expect(page.getByText(/2 links found/)).toBeVisible();
+    // Topics come back as a proposal; nothing is written until it is agreed.
+    await box.fill("Photosynthesis, enzymes and osmosis");
+    await box.press("Enter");
+    await expect(assistant.getByRole("button", { name: /make it: 15 questions/i })).toBeVisible();
 
-    await page.getByRole("button", { name: /save 2 links/i }).click();
-    await expect(page.getByText(/saved 2 links/i)).toBeVisible();
+    // A question is answered from the library, with the pieces it used.
+    await box.fill("What did I save about Kafka?");
+    await box.press("Enter");
+    await expect(assistant.getByRole("link", { name: /kafka/i }).first()).toBeVisible();
   });
 
   test("stats draws the charts without any telemetry", async ({ page }) => {

@@ -28,7 +28,8 @@ project's browser targets. Reach for a class instead.
 
 ## The local demo library
 
-`pnpm demo:local` runs the app on http://localhost:3000 against a demo library kept in
+`pnpm demo:local` runs the app, and the job worker beside it, on http://localhost:3000
+against a demo library kept in
 `data/demo/` (git-ignored, so it survives restarts and is never committed). It seeds once
 and then keeps whatever you do to it. `pnpm demo:local:reset` wipes it and seeds again.
 

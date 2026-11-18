@@ -21,3 +21,4 @@ export * as security from "./security/index";
 export * as sessions from "./sessions/index";
 export * as seed from "./seed/index";
 export * as extensions from "./extensions/index";
+export * as assistant from "./assistant/index";

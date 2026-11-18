@@ -14,6 +14,7 @@ import { claimNextJob, enqueue } from "../../src/jobs/queue";
 import { scopeFor } from "../../src/repos/context";
 import { listLinks } from "../../src/repos/links";
 import { resetDemoData } from "../../src/seed/index";
+import { searchLibrary } from "../../src/assistant/search";
 
 const pgUrl = process.env.CORE_TEST_DATABASE_URL;
 
@@ -69,6 +70,12 @@ describe.skipIf(!pgUrl)("Postgres-specific queries", () => {
       }
       expect(new Set(seen).size).toBe(seen.length);
       expect(seen.length).toBe(seeded!.links);
+
+      // The assistant's library search reads JSON and page text, which differ by dialect.
+      const hits = await searchLibrary(scope, "kafka partitions ordering");
+      expect(hits.length).toBeGreaterThan(0);
+      expect(hits.some((hit) => hit.kind === "question")).toBe(true);
+      expect(hits.some((hit) => hit.kind === "link")).toBe(true);
     } finally {
       await pg.close();
     }

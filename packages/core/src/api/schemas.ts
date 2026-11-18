@@ -318,6 +318,18 @@ export const DocumentSourceSchema = z
     path: ["file"],
   });
 
+/** One message to the assistant (POST /api/assistant). */
+export const AssistantSchema = z.object({
+  message: z.string().trim().min(1, "Write or paste something first.").max(20_000),
+  /** Set by a button that already says what was meant. */
+  force: z.enum(["save_links", "make_deck", "ask"]).optional(),
+  /** The last few turns, so a follow-up has context. */
+  history: z
+    .array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(2_000) }))
+    .max(10)
+    .optional(),
+});
+
 // ------------------------------------------------------------ responses
 // Only a few responses have a schema so far. They feed docs/api/openapi.json and are not
 // used to validate anything; the TypeScript types in the repos are the source of truth.

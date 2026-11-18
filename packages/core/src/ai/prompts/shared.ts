@@ -7,7 +7,16 @@
 // never triggers an action, so the worst a prompt injection achieves is a bad summary.
 
 export type UntrustedKind =
-  "page" | "resume" | "answer" | "job_description" | "note" | "document" | "request" | "work";
+  | "page"
+  | "resume"
+  | "answer"
+  | "job_description"
+  | "note"
+  | "document"
+  | "request"
+  | "work"
+  | "message"
+  | "library";
 
 /**
  * Wraps untrusted text in a tag and strips anything that would let it close the tag

@@ -1239,24 +1239,6 @@
   color: var(--color-subtle-foreground);
 }
 
-/* Home's paste box (components/paste-box.tsx). It floats, with the app's one real
-   shadow, on a phone; on a wide screen it sits in the page with a quieter one. */
-.paste-box {
-  background: light-dark(var(--color-surface), var(--color-raised));
-  border: 1px solid light-dark(var(--color-border), transparent);
-  box-shadow: 0 8px 24px light-dark(rgb(0 0 0 / 0.08), rgb(0 0 0 / 0.4));
-}
-
-.paste-box:focus-within {
-  border-color: var(--color-primary);
-}
-
-@media (min-width: 64rem) {
-  .paste-box {
-    box-shadow: 0 1px 3px light-dark(rgb(0 0 0 / 0.05), rgb(0 0 0 / 0.3));
-  }
-}
-
 /* The map (components/knowledge-map.tsx): a large card holding the drawing, a small
    bar of zoom buttons, and a floating card for whatever is under the pointer. */
 .map-canvas {
@@ -1295,14 +1277,49 @@
   box-shadow: 0 8px 24px light-dark(rgb(0 0 0 / 0.1), rgb(0 0 0 / 0.45));
 }
 
-/* A first visit's two ways in on Home: quiet cards that warm up under the pointer. */
-.start-choice {
+/* The assistant (components/assistant.tsx): a card holding the conversation. */
+.assistant-panel {
   background: var(--color-surface);
   border: 1px solid light-dark(var(--color-border), transparent);
 }
 
-.start-choice:hover {
+.assistant-user {
+  background: var(--color-primary-soft);
+  color: var(--color-foreground);
+}
+
+.assistant-card {
+  background: var(--color-canvas);
+  border: 1px solid var(--color-border);
+}
+
+.assistant-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.75rem;
+  padding-inline: 0.625rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-muted-foreground);
+  font-weight: 500;
+}
+
+.assistant-pill:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+  color: var(--color-foreground);
+}
+
+.assistant-pill-on {
+  background: var(--color-primary);
   border-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font-weight: 600;
+}
+
+.assistant-pill-on:hover:not(:disabled) {
+  color: var(--color-primary-foreground);
 }
 
 /* The session's card fan opens once, with a little overshoot, when Home appears. */

@@ -10,6 +10,7 @@
 // one who types nonsense gets a low one.
 
 import type { ContractName } from "./contracts/index";
+import { readMessage } from "../assistant/rules";
 import type { GradeAnswerOutput, LinkSummary } from "./contracts/index";
 
 export const MOCK_MODEL_ID = "aeyhey-mock" as const;
@@ -443,7 +444,50 @@ export function mockObjectFor(contract: ContractName, prompt: string): unknown {
       return mockDocumentIntent(prompt);
     case "agent_digest":
       return mockAgentDigest(prompt);
+    case "assistant_intent":
+      return mockAssistantIntent(prompt);
+    case "library_answer":
+      return mockLibraryAnswer(prompt);
   }
+}
+
+/** The rules' reading of the message, which is what a model would say for the easy cases. */
+function mockAssistantIntent(prompt: string): unknown {
+  const { sure: _sure, ...reading } = readMessage(tagged(prompt, "message"));
+  return reading;
+}
+
+/**
+ * An answer built from the first pieces given: their titles and first lines. Enough for
+ * demo mode to show an answer with its sources, and for the tests to check citations.
+ */
+function mockLibraryAnswer(prompt: string): unknown {
+  const library = tagged(prompt, "library");
+  const pieces = library
+    .split(/\n\n(?=\[)/)
+    .map((block) => {
+      const head = /^\[([^\]]+)\] [^:]+: (.*)$/m.exec(block);
+      const body = block.split("\n").slice(2).join(" ").trim();
+      return head ? { id: head[1]!, title: head[2]!, body } : null;
+    })
+    .filter((piece): piece is { id: string; title: string; body: string } => piece !== null)
+    .slice(0, 3);
+  if (pieces.length === 0) {
+    return {
+      answer: "I could not find anything about that in what you have saved.",
+      cited: [],
+      found: false,
+    };
+  }
+  const lines = pieces.map((piece) => {
+    const first = piece.body.split(/(?<=[.!?])\s/)[0] ?? piece.body;
+    return `${piece.title}: ${first.slice(0, 220)}`;
+  });
+  return {
+    answer: `From what you have saved:\n${lines.map((line) => `- ${line}`).join("\n")}`,
+    cited: pieces.map((piece) => piece.id),
+    found: true,
+  };
 }
 
 /**

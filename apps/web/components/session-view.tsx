@@ -1131,10 +1131,10 @@ function EmptySession({
             body: "Save a few links or make a deck of questions, and your first session will be here.",
             action: (
               <div className="flex gap-2.5">
-                <a href="/add" className="session-primary px-6">
+                <a href="/?say=https%3A%2F%2F" className="session-primary px-6">
                   Add links
                 </a>
-                <a href="/decks/new" className="quiet-pill session-quiet px-6">
+                <a href="/?say=Make%20a%20deck%20on%20" className="quiet-pill session-quiet px-6">
                   New deck
                 </a>
               </div>

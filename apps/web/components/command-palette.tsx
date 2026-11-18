@@ -50,19 +50,19 @@ interface LinkHit {
 /** Everything the palette can do, besides opening one of your own links. */
 const ACTIONS = [
   { value: "session", label: "Start a session", icon: Play, href: "/session", group: "Do" },
-  { value: "add", label: "Add links", icon: Link2, href: "/add", group: "Do" },
+  { value: "add", label: "Add links", icon: Link2, href: "/?say=https%3A%2F%2F", group: "Do" },
   {
     value: "deck-topics",
     label: "New deck from topics",
     icon: Sparkles,
-    href: "/decks/new?from=topics",
+    href: "/?say=Make%20a%20deck%20on%20",
     group: "Do",
   },
   {
     value: "deck-resume",
     label: "New deck from your resume",
     icon: Brain,
-    href: "/decks/new?from=resume",
+    href: "/",
     group: "Do",
   },
   { value: "inbox", label: "Inbox", icon: Inbox, href: "/inbox", group: "Go to" },

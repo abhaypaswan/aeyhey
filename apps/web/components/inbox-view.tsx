@@ -418,7 +418,7 @@ export function InboxView({
                 </a>
               ) : activeStatus === "unread" && !search ? (
                 <a
-                  href="/add"
+                  href="/?say=https%3A%2F%2F"
                   className="text-primary mt-3.5 inline-block text-[15px] font-semibold"
                 >
                   Save a link
