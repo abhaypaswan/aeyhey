@@ -108,7 +108,11 @@ const INTENTS: {
 ];
 const EXAMPLES: { label: string; text?: string; attach?: boolean; icon: typeof Link2 }[] = [
   { label: "Paste a link", text: "https://", icon: Link2 },
-  { label: "Kafka, Raft and consensus", text: "Kafka, Raft and consensus", icon: Brain },
+  {
+    label: "The solar system, stars and black holes",
+    text: "The solar system, stars and black holes",
+    icon: Brain,
+  },
   { label: "Attach a book, notes or resume", attach: true, icon: Paperclip },
   {
     label: "What did I save about Postgres?",
