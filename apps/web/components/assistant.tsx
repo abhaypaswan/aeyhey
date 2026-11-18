@@ -635,6 +635,44 @@ export function Assistant({
   );
 }
 
+/**
+ * A reply, with its short lists drawn as lists. Answers are plain text: paragraphs, and
+ * lines starting with "- " for a list. Nothing else is read as formatting.
+ */
+function ReplyText({ text, error }: { text: string; error?: boolean | undefined }) {
+  const blocks: ({ kind: "p"; text: string } | { kind: "ul"; items: string[] })[] = [];
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const item = /^[-*\u2022]\s+(.*)$/.exec(line);
+    const last = blocks.at(-1);
+    if (item) {
+      if (last?.kind === "ul") last.items.push(item[1]!);
+      else blocks.push({ kind: "ul", items: [item[1]!] });
+    } else {
+      blocks.push({ kind: "p", text: line });
+    }
+  }
+  return (
+    <div className={cx("flex flex-col gap-2 text-[14.5px] leading-[1.5]", error && "text-danger")}>
+      {blocks.map((block, index) =>
+        block.kind === "p" ? (
+          <p key={index}>{block.text}</p>
+        ) : (
+          <ul
+            key={index}
+            className="marker:text-subtle-foreground flex list-disc flex-col gap-1 pl-5"
+          >
+            {block.items.map((entry, i) => (
+              <li key={i}>{entry}</li>
+            ))}
+          </ul>
+        ),
+      )}
+    </div>
+  );
+}
+
 function AssistantMessage({
   message,
   busy,
@@ -658,16 +696,7 @@ function AssistantMessage({
 
   return (
     <div className="flex max-w-[94%] flex-col gap-2">
-      {message.text ? (
-        <p
-          className={cx(
-            "whitespace-pre-wrap text-[14.5px] leading-[1.5]",
-            message.error && "text-danger",
-          )}
-        >
-          {message.text}
-        </p>
-      ) : null}
+      {message.text ? <ReplyText text={message.text} error={message.error} /> : null}
 
       {proposal ? (
         <div className="assistant-card flex flex-col gap-2.5 rounded-2xl p-3">
@@ -817,31 +846,34 @@ function AssistantMessage({
       ) : null}
 
       {message.sources?.length ? (
-        <ul className="flex flex-col gap-1">
-          {message.sources.map((source) => (
-            <li key={source.id}>
-              <a
-                href={source.href}
-                className="assistant-card hover:border-primary flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-sm transition-colors"
-              >
-                <span
-                  className="grid size-6 shrink-0 place-items-center rounded-md"
-                  style={{
-                    background: soft(source.kind === "link" ? "blue" : "violet"),
-                    color: strong(source.kind === "link" ? "blue" : "violet"),
-                  }}
+        <div className="flex flex-col gap-1.5">
+          <p className="text-subtle-foreground text-xs font-semibold">From your library</p>
+          <ul className="flex flex-col gap-1">
+            {message.sources.slice(0, 3).map((source) => (
+              <li key={source.id}>
+                <a
+                  href={source.href}
+                  className="assistant-card hover:border-primary flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-sm transition-colors"
                 >
-                  {source.kind === "link" ? (
-                    <Link2 size={13} aria-hidden="true" />
-                  ) : (
-                    <Brain size={13} aria-hidden="true" />
-                  )}
-                </span>
-                <span className="min-w-0 flex-1 truncate">{source.title}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
+                  <span
+                    className="grid size-6 shrink-0 place-items-center rounded-md"
+                    style={{
+                      background: soft(source.kind === "link" ? "blue" : "violet"),
+                      color: strong(source.kind === "link" ? "blue" : "violet"),
+                    }}
+                  >
+                    {source.kind === "link" ? (
+                      <Link2 size={13} aria-hidden="true" />
+                    ) : (
+                      <Brain size={13} aria-hidden="true" />
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{source.title}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
 
       {message.working ? (

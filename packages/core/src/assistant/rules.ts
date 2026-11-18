@@ -41,6 +41,40 @@ function looksLikeQuestion(text: string): boolean {
   return /\?\s*$/.test(trimmed) || QUESTION_START.test(trimmed);
 }
 
+/** Asking for questions: "can you write ...", "make a deck on ...", "quiz me on ...". */
+const ASK_FOR =
+  /^(?:please\s+)?(?:(?:can|could|would|will)\s+you\s+(?:please\s+)?|i\s+(?:want|need|would like)\s+(?:to\s+)?|let'?s\s+)?(write|make|create|generate|prepare|build|give\s+me|set\s+up|quiz\s+me|test\s+me|practi[cs]e|revise)\b/i;
+
+/** What they want made, so a request is for questions and not for something else. */
+const QUIZ_WORDS =
+  /\b(questions?|quiz(?:zes)?|decks?|flash\s?cards?|cards?|mcqs?|practice|exercises?|problems?)\b/i;
+
+/**
+ * The topics in a request for questions, or null when the message is not one. "Can you
+ * write reverse binary tree question?" asks for questions on reverse binary tree; it is
+ * not a question about the library.
+ */
+function deckRequest(text: string): string[] | null {
+  const match = ASK_FOR.exec(text);
+  if (!match) return null;
+  const verb = match[1]!.toLowerCase().replace(/\s+/g, " ");
+  const direct =
+    verb === "quiz me" || verb === "test me" || verb.startsWith("practi") || verb === "revise";
+  if (!direct && !QUIZ_WORDS.test(text)) return null;
+  const rest = text
+    .slice(match[0].length)
+    .replace(/[?!.]+\s*$/, "")
+    .replace(QUIZ_WORDS, " ")
+    .replace(QUIZ_WORDS, " ")
+    .replace(/^\s*(?:me\s+)?(?:(?:a few|a|an|some|few|\d+)\b)?\s*/i, "")
+    .replace(/^\s*(?:on|about|for|of|from|in|covering)(?:\s+|$)/i, "")
+    .replace(/\s+(?:on|about|for|of)\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!rest) return [];
+  return topicList(rest) ?? [rest.slice(0, 80)];
+}
+
 /** Splits "Kafka, Raft and consensus" into its topics, or returns null if it is not a list. */
 function topicList(text: string): string[] | null {
   const parts = text
@@ -74,6 +108,23 @@ export function readMessage(text: string): AssistantIntentOutput & { sure: boole
       style: null,
       query: "",
       sure: true,
+    };
+  }
+
+  // Asking for questions on something: a deck proposal, whatever the phrasing.
+  const requested = deckRequest(message);
+  if (requested) {
+    return {
+      intent: "make_deck",
+      reply:
+        requested.length === 0
+          ? "What would you like questions on?"
+          : `I can make a deck on ${requested.length === 1 ? requested[0] : `${requested.length} topics`}.`,
+      topics: requested,
+      level: null,
+      style: null,
+      query: "",
+      sure: requested.length > 0,
     };
   }
 

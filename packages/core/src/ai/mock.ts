@@ -479,12 +479,18 @@ function mockLibraryAnswer(prompt: string): unknown {
       found: false,
     };
   }
-  const lines = pieces.map((piece) => {
-    const first = piece.body.split(/(?<=[.!?])\s/)[0] ?? piece.body;
-    return `${piece.title}: ${first.slice(0, 220)}`;
-  });
+  // One short paragraph, the way a model answers: the closest piece, and how many more.
+  const first = pieces[0]!;
+  const sentence = (first.body.replace(/^Model answer:\s*/, "").split(/(?<=[.!?])\s/)[0] ?? "")
+    .slice(0, 220)
+    .trim();
+  const more = pieces.length - 1;
   return {
-    answer: `From what you have saved:\n${lines.map((line) => `- ${line}`).join("\n")}`,
+    answer: `The closest thing you saved is "${first.title}"${sentence ? `: ${sentence}` : "."}${
+      more > 0
+        ? ` ${more === 1 ? "One more piece touches" : `${more} more pieces touch`} on it.`
+        : ""
+    }`,
     cited: pieces.map((piece) => piece.id),
     found: true,
   };

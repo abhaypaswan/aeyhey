@@ -5,7 +5,8 @@
 // rank them, the same way on SQLite and on Postgres. It is a word search: each meaningful
 // word of the question is looked for in titles, summaries, notes, the saved page text,
 // questions, model answers and tags, and a piece scores by where its words were found.
-// A personal library is small enough that the ranking runs here rather than in the
+// A piece must have at least half of the words to count, so one shared word is not a
+// match. A personal library is small enough that the ranking runs here rather than in the
 // database, which keeps the two databases behaving the same. Every query is scoped to
 // the one user.
 
@@ -25,6 +26,8 @@ export interface LibraryHit {
   tags: string[];
   href: string;
   score: number;
+  /** How many of the question's words the piece has. */
+  matched: number;
 }
 
 const CANDIDATES = 300;
@@ -37,6 +40,12 @@ function count(haystack: string | null | undefined, words: string[]): number {
   if (!haystack) return 0;
   const lower = haystack.toLowerCase();
   return words.filter((word) => lower.includes(word)).length;
+}
+
+/** How many of the words appear anywhere in the piece. */
+function covered(haystacks: (string | null | undefined)[], words: string[]): number {
+  const all = haystacks.filter(Boolean).join(" ").toLowerCase();
+  return words.filter((word) => all.includes(word)).length;
 }
 
 export async function searchLibrary(
@@ -146,6 +155,17 @@ export async function searchLibrary(
       tags: itemTagList,
       href: `/links/${row.id}`,
       score,
+      matched: covered(
+        [
+          row.title,
+          itemTagList.join(" "),
+          summary,
+          row.whySaved,
+          row.userNote,
+          row.page as string | null,
+        ],
+        words,
+      ),
     });
   }
   for (const row of questionRows) {
@@ -163,11 +183,15 @@ export async function searchLibrary(
       tags: itemTagList,
       href: `/decks/${row.deckId}`,
       score,
+      matched: covered([row.text, itemTagList.join(" "), row.modelAnswer], words),
     });
   }
 
+  // A piece has to have at least half of the question's words: "reverse binary tree"
+  // should not turn up a note on b-trees because it says "tree".
+  const needed = Math.max(1, Math.ceil(words.length / 2));
   return hits
-    .filter((hit) => hit.score > 0)
+    .filter((hit) => hit.score > 0 && hit.matched >= needed)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 }

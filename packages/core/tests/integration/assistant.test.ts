@@ -55,6 +55,27 @@ describe("reading a message without a model", () => {
     });
   });
 
+  it("reads a request for questions as a deck, however it is phrased", () => {
+    expect(readMessage("can you write reverse binary tree question?")).toMatchObject({
+      intent: "make_deck",
+      topics: ["reverse binary tree"],
+      sure: true,
+    });
+    expect(readMessage("Make a deck on the solar system and stars").topics).toEqual([
+      "the solar system",
+      "stars",
+    ]);
+    expect(readMessage("quiz me on photosynthesis").topics).toEqual(["photosynthesis"]);
+    expect(readMessage("give me 10 questions about cells and DNA").topics).toEqual([
+      "cells",
+      "DNA",
+    ]);
+    // Nothing named yet: the reply asks what on.
+    expect(readMessage("Make a deck on")).toMatchObject({ intent: "make_deck", topics: [] });
+    // Asking to be told something is still a question.
+    expect(readMessage("can you explain binary trees?").intent).toBe("ask");
+  });
+
   it("asks when a short phrase could be a topic or a search", () => {
     expect(readMessage("postgres")).toMatchObject({ intent: "unclear", sure: false });
   });
@@ -167,6 +188,12 @@ describe("the assistant on the demo library", () => {
     expect(readMessage("What did I save about decks?").intent).toBe("ask");
     expect(readMessage("what is a black hole?").intent).toBe("ask");
     expect(readMessage("how do I make a deck?").intent).toBe("help");
+  });
+
+  it("does not count one shared word as a match", async () => {
+    // The demo library has b-trees, but nothing on reversing a binary tree.
+    expect(await searchLibrary(scope, "reverse binary tree")).toEqual([]);
+    expect((await searchLibrary(scope, "b-tree index")).length).toBeGreaterThan(0);
   });
 
   it("finds questions and links by their tags as well as their words", async () => {
