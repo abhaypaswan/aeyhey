@@ -1,14 +1,14 @@
 "use client";
 // SPDX-License-Identifier: AGPL-3.0-only
-// What only the owner sees above their page on Your profile: the address with the public
-// switch, Edit and View page. Below it the page is drawn as a visitor sees it. Lines from
+// What only the owner sees above their profile: the address to share, with a copy
+// button, the Public switch and Edit. Below it the page is drawn as a visitor sees it. Lines from
 // coding sessions go on it by themselves, so there is nothing to review here.
 
 import { useState } from "react";
 import { apiClient, ApiRequestError } from "../lib/client";
-import { SwitchField } from "./form";
-import { Copy, ExternalLink, Globe } from "./icons";
-import { Button, Card, LinkButton, Notice, cx } from "./ui";
+import { Switch, SwitchThumb } from "@ui-sdk/react/switch";
+import { Check, Copy, Globe } from "./icons";
+import { LinkButton, Notice, cx } from "./ui";
 
 export function OwnerBar({
   url,
@@ -53,54 +53,66 @@ export function OwnerBar({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <div className="flex min-w-0 flex-col gap-1">
+    <header className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div className="flex min-w-0 flex-col gap-2.5">
           <h1 className="font-display text-[30px] font-[640] leading-[1.1] lg:text-4xl">Profile</h1>
-          <p className="text-muted-foreground">
-            Below is your profile as visitors see it. Edit changes its words, your work and what
-            shows.
-          </p>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+            {/* The address, as the link people get. Hidden pages are not reachable, so
+                it is plain text then. */}
+            <span className="border-border bg-card inline-flex h-9 min-w-0 max-w-full items-center gap-2 rounded-full border pl-3 pr-1 text-sm">
+              <Globe
+                size={15}
+                aria-hidden="true"
+                className={cx("shrink-0", enabled ? "text-primary" : "text-subtle-foreground")}
+              />
+              {enabled ? (
+                <a
+                  href={`/u/${handle}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="truncate font-medium underline-offset-2 hover:underline"
+                >
+                  {shortUrl}
+                </a>
+              ) : (
+                <span className="text-muted-foreground truncate font-medium">{shortUrl}</span>
+              )}
+              <button
+                type="button"
+                onClick={() => void copy()}
+                aria-label={copied ? "Link copied" : "Copy link"}
+                title={copied ? "Copied" : "Copy link"}
+                className="text-muted-foreground hover:bg-quiet hover:text-foreground grid size-7 shrink-0 cursor-pointer place-items-center rounded-full transition-colors"
+              >
+                {copied ? (
+                  <Check size={15} aria-hidden="true" className="text-primary" />
+                ) : (
+                  <Copy size={15} aria-hidden="true" />
+                )}
+              </button>
+            </span>
+            <span className="text-muted-foreground text-sm">
+              {enabled ? "Anyone with the link can see it." : "Hidden. Only you can see it."}
+            </span>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <label className="border-border inline-flex h-10 cursor-pointer items-center gap-2.5 rounded-full border pl-4 pr-2 text-sm font-semibold">
+            Public
+            <Switch
+              aria-label="Public"
+              checked={enabled}
+              disabled={busy}
+              onCheckedChange={(on) => void setPublic(on)}
+            >
+              <SwitchThumb />
+            </Switch>
+          </label>
           <LinkButton href="/profile?edit=1">Edit</LinkButton>
-          {enabled ? (
-            <LinkButton href={`/u/${handle}`} icon={ExternalLink} external>
-              View page
-            </LinkButton>
-          ) : null}
         </div>
       </div>
-      <Card
-        className={cx(
-          "flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6",
-          enabled && "border-primary/30 bg-primary-soft/40",
-        )}
-      >
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <Globe
-            size={18}
-            aria-hidden="true"
-            className={enabled ? "text-primary" : "text-subtle-foreground"}
-          />
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold">{shortUrl}</span>
-          <Button size="sm" tone="ghost" icon={Copy} onClick={() => void copy()}>
-            {copied ? "Copied" : "Copy"}
-          </Button>
-        </div>
-        <div className="sm:border-border sm:w-80 sm:border-l sm:pl-6">
-          <SwitchField
-            label="Public"
-            description={
-              enabled ? "Anyone with the link can see it." : "Hidden. Only you can see it."
-            }
-            checked={enabled}
-            disabled={busy}
-            onCheckedChange={(on) => void setPublic(on)}
-          />
-        </div>
-      </Card>
-      {message ? <Notice tone={message.ok ? "success" : "error"}>{message.text}</Notice> : null}
-    </div>
+      {message && !message.ok ? <Notice tone="error">{message.text}</Notice> : null}
+    </header>
   );
 }
