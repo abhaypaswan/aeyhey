@@ -433,7 +433,7 @@ export function Assistant({
 
   return (
     <section
-      aria-label="Assistant"
+      aria-label="Aey"
       className={cx(
         "assistant-panel flex min-h-0 flex-col overflow-hidden rounded-[22px]",
         className,
@@ -444,9 +444,9 @@ export function Assistant({
           <Sparkles size={16} aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-[17px] font-[640] leading-tight">Assistant</h2>
+          <h2 className="font-display text-[17px] font-[640] leading-tight">Aey</h2>
           <p className="text-muted-foreground truncate text-xs">
-            Add anything, or ask about what you saved
+            Add anything, or ask about anything
           </p>
         </div>
         {messages.length > 0 ? (
@@ -470,8 +470,9 @@ export function Assistant({
         {messages.length === 0 ? (
           <div className="flex flex-col gap-3">
             <p className="text-[15px] leading-[1.45]">
-              Paste a link you want to read, name what you want to learn, attach a book, your notes
-              or your resume, or ask about anything you have saved. I will work out the rest.
+              <span className="font-semibold">Hey, I am Aey.</span> Paste a link you want to read,
+              name what you want to learn, attach a book, your notes or your resume, or ask me
+              anything. I will work out the rest.
             </p>
             <div className="flex flex-wrap gap-2">
               {EXAMPLES.map((example) => (
@@ -575,7 +576,7 @@ export function Assistant({
             <Paperclip size={17} aria-hidden="true" />
           </SdkButton>
           <label htmlFor="assistant-box" className="sr-only">
-            Message the assistant
+            Message Aey
           </label>
           <textarea
             id="assistant-box"

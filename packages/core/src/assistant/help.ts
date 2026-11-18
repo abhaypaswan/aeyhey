@@ -25,6 +25,13 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "Aeyhey helps you remember what you read and learn. Save links you mean to read, or tell me what you want to learn and I make a deck of practice questions on it, from topics, a book, your notes or your resume. Then a short session each day brings back a few cards at a time, timed for just before you would forget them, until you know them.",
   },
   {
+    id: "aey",
+    title: "Aey",
+    keywords: ["aey", "you", "who", "name", "assistant", "chat", "bot"],
+    answer:
+      "I am Aey, the one you talk to in Aeyhey. Paste a link and I save it, name a topic or attach a book, your notes or your resume and I make a deck of practice questions, or ask me anything and I answer, from your own library when it covers it.",
+  },
+  {
     id: "deck",
     title: "Decks",
     keywords: ["deck", "decks", "question", "questions", "topic", "topics", "practice"],
@@ -149,7 +156,10 @@ export const HELP_ARTICLES: HelpArticle[] = [
 ];
 
 /** Words that say a question is about the app rather than about what was saved. */
-const APP_WORDS = /\b(aeyhey|this app|the app|this site|this website)\b/i;
+// Aey is the name of the one you talk to, so a question to it about itself is about the
+// app too.
+const APP_WORDS =
+  /\b(aeyhey|aey|this app|the app|this site|this website|who are you|what are you|what can you do|your name)\b/i;
 
 /** "What did I save about decks" is a library question, even though it says decks. */
 const ABOUT_MY_LIBRARY =

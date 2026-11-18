@@ -201,6 +201,15 @@ describe("the assistant on the demo library", () => {
     }
   });
 
+  it("knows its own name, Aey, with or without a model", async () => {
+    for (const keys of [mockKeys, noKeys]) {
+      for (const message of ["who is aey?", "who are you", "what is your name"]) {
+        const reply = await respond(scope, deps(keys), { message });
+        expect(reply.reply).toMatch(/I am Aey/);
+      }
+    }
+  });
+
   it("keeps questions about what you learn and save off the help", async () => {
     expect(readMessage("what are topics in physics?").intent).toBe("ask");
     expect(readMessage("What did I save about decks?").intent).toBe("ask");
