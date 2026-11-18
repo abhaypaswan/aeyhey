@@ -29,11 +29,6 @@ function page(title: string, body: string, linkUrl?: string): Response {
   p{margin:0 0 18px;color:#4a4a50;line-height:1.5}
   a{display:inline-block;padding:10px 16px;border-radius:8px;background:#4f46e5;color:#fff;
     text-decoration:none;font-weight:600;font-size:14px}
-  @media (prefers-color-scheme: dark){
-    body{background:#111113;color:#f2f2f4}
-    .card{background:#1b1b1e;border-color:#2c2c30}
-    p{color:#a8a8ad}
-  }
 </style></head>
 <body><div class="card">
   <h1>${title}</h1>

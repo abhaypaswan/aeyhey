@@ -26,7 +26,8 @@ export type ThemeId = (typeof THEMES)[number]["id"];
 export type ModeId = (typeof MODES)[number]["id"];
 
 export const DEFAULT_THEME: ThemeId = "indigo";
-export const DEFAULT_MODE: ModeId = "system";
+// Light unless someone picks otherwise: "Match my device" is a choice, not the default.
+export const DEFAULT_MODE: ModeId = "light";
 
 export const THEME_COOKIE = "aeyhey_theme";
 export const MODE_COOKIE = "aeyhey_mode";

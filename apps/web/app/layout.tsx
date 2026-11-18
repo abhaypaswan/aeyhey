@@ -45,17 +45,30 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Aeyhey", statusBarStyle: "black-translucent" },
 };
 
-export const viewport: Viewport = {
+/** The browser bar's colour follows the chosen mode; light unless someone chose otherwise. */
+export async function generateViewport(): Promise<Viewport> {
+  const mode = parseMode((await cookies()).get(MODE_COOKIE)?.value);
+  return {
+    ...viewport,
+    themeColor:
+      mode === "dark"
+        ? "#1a1a1f"
+        : mode === "system"
+          ? [
+              { media: "(prefers-color-scheme: light)", color: "#fbfbfc" },
+              { media: "(prefers-color-scheme: dark)", color: "#1a1a1f" },
+            ]
+          : "#fbfbfc",
+  };
+}
+
+const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   // Used one-handed on a phone, so the layout never needs a pinch, but zoom is left
   // available because disabling it breaks the app for anyone who needs larger text.
   maximumScale: 5,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbfbfc" },
-    { media: "(prefers-color-scheme: dark)", color: "#1a1a1f" },
-  ],
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
