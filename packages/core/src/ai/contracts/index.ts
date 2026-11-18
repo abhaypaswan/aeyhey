@@ -207,7 +207,7 @@ export type AgentDigestOutput = z.infer<typeof AgentDigestSchema>;
 
 // ---------------------------------------------------------------- assistant
 
-export const ASSISTANT_INTENTS = ["save_links", "make_deck", "ask", "unclear"] as const;
+export const ASSISTANT_INTENTS = ["save_links", "make_deck", "ask", "help", "unclear"] as const;
 
 /**
  * What someone wants from one message to the assistant. The app does the work; this only
@@ -216,7 +216,8 @@ export const ASSISTANT_INTENTS = ["save_links", "make_deck", "ask", "unclear"] a
 export const AssistantIntentSchema = z.object({
   /**
    * save_links: they gave links to keep. make_deck: they want questions on some topics.
-   * ask: they asked something about what they saved or are learning. unclear: it could
+   * ask: they asked something about what they saved or are learning. help: they asked
+   * about Aeyhey itself, what it is or how a part of it works. unclear: it could
    * reasonably be more than one of these, so the app asks.
    */
   intent: z.enum(ASSISTANT_INTENTS),

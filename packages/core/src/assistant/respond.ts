@@ -4,7 +4,8 @@
 // Every way of adding to Aeyhey or asking about it goes through here. Links are saved at
 // once, since a link is never ambiguous. A deck is proposed first, with its topics, level
 // and purpose, so nothing is written (and nothing is spent) until the person agrees. A
-// question is answered from their own library, with the pieces it used. When a message
+// question is answered from their own library, with the pieces it used, and a question
+// about Aeyhey itself from the app's own help (help.ts). When a message
 // could mean more than one thing, the reply asks, with a button for each reading.
 //
 // The rules in rules.ts settle the easy cases without a model. A model is asked only when
@@ -22,6 +23,7 @@ import type { AssistantIntentOutput } from "../ai/contracts/index";
 import type { Scope } from "../repos/context";
 import { loadStats } from "../repos/stats";
 import { createLogger } from "../logger";
+import { findHelp, HELP_ARTICLES, isAboutApp } from "./help";
 import { readMessage } from "./rules";
 import { searchLibrary, type LibraryHit } from "./search";
 
@@ -137,6 +139,9 @@ async function answerFromLibrary(
     list.map((hit) => ({ id: hit.id, kind: hit.kind, title: hit.title, href: hit.href }));
 
   if (hits.length === 0 && !(asksAboutProgress && weakTopics.length > 0)) {
+    // Nothing saved answers it, but it may be about the app: a model can read "what does
+    // this thing do" as a library question.
+    if (isAboutApp(question)) return helpReply(question);
     return {
       intent: "ask",
       reply: "I could not find anything about that in what you have saved.",
@@ -196,6 +201,12 @@ async function answerFromLibrary(
   }
 }
 
+/** An answer about Aeyhey itself, from its own help. */
+function helpReply(message: string): AssistantReply {
+  const article = findHelp(message) ?? HELP_ARTICLES[0]!;
+  return { intent: "help", reply: article.answer };
+}
+
 export async function respond(
   scope: Scope,
   deps: AssistantDeps,
@@ -252,6 +263,9 @@ export async function respond(
 
     case "ask":
       return answerFromLibrary(scope, deps, message, reading.query);
+
+    case "help":
+      return helpReply(message);
 
     case "unclear":
     default:

@@ -20,6 +20,7 @@ export const ASSISTANT_INTENT_SYSTEM = joinPrompt(
     "- save_links: the message gives links to keep.",
     "- make_deck: they want practice questions on something: a subject, a list of topics, an exam, a book or a skill. Put the topics in topics as short names, up to 10. If they named a level (beginner, intermediate, advanced) or a purpose (learning, interviews, both), set level or style; otherwise leave them null.",
     "- ask: they asked a question about what they saved or are learning, or asked to find, list, explain or quiz them on something. Put the words to search for in query.",
+    "- help: they asked about this app itself: what Aeyhey is, what it can do, or how one of its parts works (decks, sessions, cards, links, the inbox, reminders, streaks, the profile page, coding agents, search, their data).",
     "- unclear: it could reasonably be more than one of these. Ask which they meant.",
   ].join("\n"),
   "For reply, write one or two short sentences to them, in the first person, saying what you will do or asking what they meant. Do not promise anything the app cannot do.",

@@ -54,7 +54,7 @@ interface Option {
 }
 
 interface AssistantReply {
-  intent: "save_links" | "make_deck" | "ask" | "unclear";
+  intent: "save_links" | "make_deck" | "ask" | "help" | "unclear";
   reply: string;
   saved?: { created: number; duplicates: number };
   proposal?: Proposal;

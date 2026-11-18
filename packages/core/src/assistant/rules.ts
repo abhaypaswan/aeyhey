@@ -9,6 +9,7 @@
 
 import type { AssistantIntentOutput } from "../ai/contracts/index";
 import { extractUrls } from "../links/extract-urls";
+import { isAboutApp } from "./help";
 
 const QUESTION_START =
   /^(what|whats|what's|how|why|which|when|where|who|whom|whose|is|are|am|do|does|did|can|could|should|would|will|have|has|explain|tell|show|list|find|quiz|summari[sz]e|remind|give)\b/i;
@@ -68,6 +69,19 @@ export function readMessage(text: string): AssistantIntentOutput & { sure: boole
         urls.length === 1
           ? "Saving that link. I will read it and write a short summary."
           : `Saving ${urls.length} links. I will read each one and write a short summary.`,
+      topics: [],
+      level: null,
+      style: null,
+      query: "",
+      sure: true,
+    };
+  }
+
+  // A question about Aeyhey itself: answered from the app's own help, not the library.
+  if (isAboutApp(message)) {
+    return {
+      intent: "help",
+      reply: "",
       topics: [],
       level: null,
       style: null,

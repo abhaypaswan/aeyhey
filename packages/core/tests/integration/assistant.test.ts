@@ -147,6 +147,28 @@ describe("the assistant on the demo library", () => {
     expect(answer.reply).toMatch(/I found/);
   });
 
+  it("answers questions about Aeyhey itself from its own help, with or without a model", async () => {
+    for (const keys of [mockKeys, noKeys]) {
+      const deck = await respond(scope, deps(keys), { message: "what is deck?" });
+      expect(deck.intent).toBe("help");
+      expect(deck.reply).toMatch(/A deck is a set of practice questions/);
+      expect(deck.options).toBeUndefined();
+
+      const app = await respond(scope, deps(keys), {
+        message: "what aeyhey can do? what is its purpose?",
+      });
+      expect(app.intent).toBe("help");
+      expect(app.reply).toMatch(/Aeyhey helps you remember/);
+    }
+  });
+
+  it("keeps questions about what you learn and save off the help", async () => {
+    expect(readMessage("what are topics in physics?").intent).toBe("ask");
+    expect(readMessage("What did I save about decks?").intent).toBe("ask");
+    expect(readMessage("what is a black hole?").intent).toBe("ask");
+    expect(readMessage("how do I make a deck?").intent).toBe("help");
+  });
+
   it("finds questions and links by their tags as well as their words", async () => {
     const hits = await searchLibrary(scope, "organic chemistry");
     expect(hits.some((hit) => hit.kind === "question")).toBe(true);
