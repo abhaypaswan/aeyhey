@@ -26,10 +26,10 @@ export const HELP_ARTICLES: HelpArticle[] = [
   },
   {
     id: "aey",
-    title: "Aey",
+    title: "aey",
     keywords: ["aey", "you", "who", "name", "assistant", "chat", "bot"],
     answer:
-      "I am Aey, the one you talk to in Aeyhey. Paste a link and I save it, name a topic or attach a book, your notes or your resume and I make a deck of practice questions, or ask me anything and I answer, from your own library when it covers it.",
+      "I am aey, the one you talk to in Aeyhey. Paste a link and I save it, name a topic or attach a book, your notes or your resume and I make a deck of practice questions, or ask me anything and I answer, from your own library when it covers it.",
   },
   {
     id: "deck",
@@ -156,8 +156,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
 ];
 
 /** Words that say a question is about the app rather than about what was saved. */
-// Aey is the name of the one you talk to, so a question to it about itself is about the
-// app too.
+// aey, always lowercase, is the name of the one you talk to, so a question to it about
+// itself is about the app too.
 const APP_WORDS =
   /\b(aeyhey|aey|this app|the app|this site|this website|who are you|what are you|what can you do|your name)\b/i;
 

@@ -92,7 +92,7 @@ export default async function HomePage({
   const body = due
     ? `${waitingNow} ${waitingCount === 1 ? "is" : "are"} waiting. About ${pluralize(minutes, "minute")}, one card at a time.`
     : nothingSaved
-      ? "Paste a link you meant to read, name a topic you are learning, attach a book, your notes or your resume, or ask about anything. Aey works out the rest, and Aeyhey keeps bringing each thing back until you have it."
+      ? "Paste a link you meant to read, name a topic you are learning, attach a book, your notes or your resume, or ask about anything. aey works out the rest, and Aeyhey keeps bringing each thing back until you have it."
       : paused
         ? "Reminders are paused. You can still do a few cards."
         : `Nothing is due. Next session ${nextSession}.`;

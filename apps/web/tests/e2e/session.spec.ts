@@ -143,7 +143,7 @@ test.describe("the demo flow", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");
     await page.waitForLoadState("networkidle");
-    const assistant = page.getByRole("region", { name: "Aey" });
+    const assistant = page.getByRole("region", { name: "aey" });
     const box = assistant.getByRole("textbox", { name: /message aey/i });
 
     // A link is saved at once. Unique per run: both projects share one database.

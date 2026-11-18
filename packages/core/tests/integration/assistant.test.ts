@@ -201,11 +201,11 @@ describe("the assistant on the demo library", () => {
     }
   });
 
-  it("knows its own name, Aey, with or without a model", async () => {
+  it("knows its own name, aey, with or without a model", async () => {
     for (const keys of [mockKeys, noKeys]) {
       for (const message of ["who is aey?", "who are you", "what is your name"]) {
         const reply = await respond(scope, deps(keys), { message });
-        expect(reply.reply).toMatch(/I am Aey/);
+        expect(reply.reply).toMatch(/I am aey/);
       }
     }
   });
