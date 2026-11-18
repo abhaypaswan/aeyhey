@@ -5,17 +5,17 @@
 // It follows the phone app. Three places matter day to day, Home, Inbox and Decks, and
 // they sit in a row of pill tabs. Everything about you (stats, journal, your page,
 // settings, reminders) lives behind your picture on the right. On a wide screen the bar
-// also carries search and Add links, because a keyboard and the room are there; on a
-// phone it is just the tabs and the picture, like the app.
+// also carries search, because a keyboard is there. Adding is done where it belongs:
+// Home's box takes a link or a topic, and Search offers Add links from anywhere.
 
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Coins, UserRound } from "lucide-react";
 import { Button } from "@ui-sdk/react/button";
 import { AccountMenu } from "./account-menu";
-import { Plus, Search } from "./icons";
+import { Search } from "./icons";
 import type { LucideIcon } from "./icons";
-import { Kbd, LinkButton, cx } from "./ui";
+import { Kbd, cx } from "./ui";
 
 export interface ShellData {
   /** Cards in the next session, capped at the session size. */
@@ -121,11 +121,6 @@ export function ShellFrame({ children, data }: { children: ReactNode; data: Shel
                 <Kbd>⌘K</Kbd>
               </span>
             </Button>
-            <span className="hidden md:block">
-              <LinkButton href="/add" size="sm" icon={Plus}>
-                Add links
-              </LinkButton>
-            </span>
             <AccountMenu data={data} />
           </div>
         </div>
