@@ -26,6 +26,19 @@ Two things about this project in particular, both of which cost an afternoon to 
 Lightning CSS, which Tailwind v4 compiles with, also drops `:has()` rules at this
 project's browser targets. Reach for a class instead.
 
+## The local demo library
+
+`pnpm demo:local` runs the app on http://localhost:3000 against a demo library kept in
+`data/demo/` (git-ignored, so it survives restarts and is never committed). It seeds once
+and then keeps whatever you do to it. `pnpm demo:local:reset` wipes it and seeds again.
+
+The library is `packages/core/src/seed/` (`data.ts` and `library.ts`): links and decks
+across backend engineering, a book, class 11 physics, organic chemistry and language
+models, with review history and graded answers, so every screen has learned, due, weak
+and strong things to show. Use it to try and to demo every new feature. When a feature
+needs data the library does not have, add it there rather than clicking it in by hand,
+so the next reset still has it.
+
 ## The rules that do not bend
 
 - **No em dashes** anywhere: code comments, UI copy, docs, commit messages.

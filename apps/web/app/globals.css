@@ -1257,6 +1257,44 @@
   }
 }
 
+/* The map (components/knowledge-map.tsx): a large card holding the drawing, a small
+   bar of zoom buttons, and a floating card for whatever is under the pointer. */
+.map-canvas {
+  background:
+    radial-gradient(
+        circle,
+        light-dark(rgb(0 0 0 / 0.07), rgb(255 255 255 / 0.06)) 1px,
+        transparent 1.2px
+      )
+      0 0 / 22px 22px,
+    var(--color-surface);
+  border: 1px solid light-dark(var(--color-border), transparent);
+}
+
+.map-tools {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.map-tool {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  color: var(--color-foreground);
+}
+
+.map-tool:hover {
+  background: var(--color-quiet);
+}
+
+.map-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  box-shadow: 0 8px 24px light-dark(rgb(0 0 0 / 0.1), rgb(0 0 0 / 0.45));
+}
+
 /* A first visit's two ways in on Home: quiet cards that warm up under the pointer. */
 .start-choice {
   background: var(--color-surface);

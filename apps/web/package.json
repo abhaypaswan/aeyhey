@@ -1,6 +1,6 @@
 {
   "name": "@aeyhey/web",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "description": "The Aeyhey community app. Thin by design: routes render page components from @aeyhey/core.",
@@ -19,6 +19,7 @@
     "@ui-sdk/core": "0.1.0-beta.1",
     "@ui-sdk/react": "0.1.0-beta.1",
     "clsx": "^2.1.1",
+    "d3-force": "3.0.0",
     "lucide-react": "^0.460.0",
     "next": "^16.0.0",
     "react": "^19.0.0",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@playwright/test": "^1.49.0",
     "@tailwindcss/postcss": "^4.0.0",
+    "@types/d3-force": "3.0.10",
     "@types/node": "^22.9.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

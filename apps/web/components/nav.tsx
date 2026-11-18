@@ -50,15 +50,18 @@ const BARE_ROUTES = ["/session", "/setup", "/login", "/u/"];
 export const OPEN_PALETTE_EVENT = "aeyhey:open-palette";
 
 const TABS = [
-  { href: "/", label: "Home" },
-  { href: "/inbox", label: "Inbox" },
-  { href: "/decks", label: "Decks" },
+  { href: "/", label: "Home", wideOnly: false },
+  { href: "/inbox", label: "Inbox", wideOnly: false },
+  { href: "/decks", label: "Decks", wideOnly: false },
+  // The map needs the room a wide screen has; phones get it later.
+  { href: "/map", label: "Map", wideOnly: true },
 ];
 
 function activeTab(pathname: string): string | null {
   if (pathname === "/") return "/";
   if (/^\/(inbox|links|add)/.test(pathname)) return "/inbox";
   if (pathname.startsWith("/decks")) return "/decks";
+  if (pathname.startsWith("/map")) return "/map";
   return null;
 }
 
@@ -89,7 +92,7 @@ export function ShellFrame({ children, data }: { children: ReactNode; data: Shel
               {TABS.map((tab) => {
                 const selected = active === tab.href;
                 return (
-                  <li key={tab.href}>
+                  <li key={tab.href} className={tab.wideOnly ? "hidden lg:block" : undefined}>
                     <a
                       href={tab.href}
                       aria-current={selected ? "page" : undefined}

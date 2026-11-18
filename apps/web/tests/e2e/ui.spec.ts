@@ -9,6 +9,8 @@ import { expect, test, type Page } from "@playwright/test";
 test.describe("the command palette", () => {
   test("opens on the keyboard, filters, and runs what you pick", async ({ page }) => {
     await page.goto("/inbox");
+    // The shortcut is listened for once the page has hydrated, which a long inbox delays.
+    await page.waitForLoadState("networkidle");
 
     await page.keyboard.press("ControlOrMeta+k");
 
@@ -38,7 +40,9 @@ test.describe("the command palette", () => {
 
   test("sits over the page rather than in a corner of it", async ({ page }) => {
     await page.goto("/inbox");
+    await page.waitForLoadState("networkidle");
     await page.keyboard.press("ControlOrMeta+k");
+    await expect(page.getByRole("dialog")).toBeVisible();
 
     const box = await page.getByRole("dialog").boundingBox();
     const viewport = page.viewportSize();
@@ -231,5 +235,25 @@ test.describe("deck detail", () => {
     await confirm.getByRole("button", { name: "Cancel" }).click();
     await expect(confirm).toBeHidden();
     await expect(questions).toHaveCount(countBefore);
+  });
+});
+
+test.describe("the map", () => {
+  test("draws subjects, says where reading meets questions, and focuses one", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/map");
+
+    await expect(page.getByRole("heading", { name: "Map" })).toBeVisible();
+    await expect(page.getByText(/questions and \d+ links across \d+ subjects/)).toBeVisible();
+
+    const bridges = page.getByRole("region", { name: "Bridges" }).getByRole("button");
+    await expect(bridges.first()).toBeVisible();
+    await bridges.first().click();
+    await expect(page.getByRole("button", { name: /show everything/ })).toBeVisible();
+
+    // Every dot is a real link to the thing it stands for.
+    await expect(
+      page.locator('section[aria-label^="Map"] a[href^="/links/"]').first(),
+    ).toBeAttached();
   });
 });

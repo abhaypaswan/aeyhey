@@ -98,7 +98,7 @@ export const SEED_LINKS: SeedLink[] = [
       "Every large language model since is a descendant of this architecture.",
     ],
     whySaved: "You probably saved this meaning to finally read the original paper.",
-    tags: ["machine-learning", "papers"],
+    tags: ["machine-learning", "papers", "transformers", "attention"],
     readMinutes: 28,
     savedDaysAgo: 220,
     status: "expiring",
@@ -171,6 +171,11 @@ export interface SeedQuestion {
   resumeAnchor?: string;
   /** How many times it has been reviewed already, so scheduling looks real. */
   reviewHistory?: ("again" | "hard" | "good" | "easy")[];
+  /**
+   * The written answer given at the last review, with its score out of 100. Seeded as a
+   * grade on that review, so last answers, scores by topic and weak spots all have data.
+   */
+  answer?: { text: string; score: number };
 }
 
 export const SEED_RESUME_DECK: { name: string; questions: SeedQuestion[] } = {

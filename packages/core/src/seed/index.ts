@@ -26,6 +26,7 @@ import {
   SEED_TOPIC_DECK,
   type SeedQuestion,
 } from "./data";
+import { SEED_LIBRARY_DECKS, SEED_LIBRARY_LINKS } from "./library";
 import { createLogger } from "../logger";
 
 const log = createLogger("seed");
@@ -86,7 +87,7 @@ export async function seedDemoData(handle: DbHandle, now = new Date()): Promise<
     return null;
   }
 
-  const { appMeta, links, cards, decks, questions, questionSources, reviewLogs, settings } =
+  const { appMeta, links, cards, decks, grades, questions, questionSources, reviewLogs, settings } =
     handle.schema;
 
   const userId = (await ownerExists(handle))
@@ -103,7 +104,7 @@ export async function seedDemoData(handle: DbHandle, now = new Date()): Promise<
   let reviews = 0;
 
   // ---------------------------------------------------------------- links
-  for (const seed of SEED_LINKS) {
+  for (const seed of [...SEED_LINKS, ...SEED_LIBRARY_LINKS]) {
     const savedAt = new Date(now.getTime() - seed.savedDaysAgo * DAY_MS);
     const linkId = newId(savedAt);
     const cardId = newId(savedAt);
@@ -216,7 +217,7 @@ export async function seedDemoData(handle: DbHandle, now = new Date()): Promise<
 
   const seedDeck = async (
     deck: { name: string; questions: SeedQuestion[] },
-    kind: "resume" | "topics",
+    kind: "resume" | "topics" | "document",
     sourceId: string,
     createdDaysAgo: number,
   ): Promise<void> => {
@@ -280,6 +281,39 @@ export async function seedDemoData(handle: DbHandle, now = new Date()): Promise<
           updatedAt: now,
         });
 
+        // A written answer, graded, on the last review.
+        let gradeId: string | null = null;
+        const lastAt = reviewedAt[reviewedAt.length - 1];
+        if (seed.answer && lastAt) {
+          gradeId = newId(lastAt);
+          const score = seed.answer.score;
+          const verdict = score >= 75 ? "correct" : score >= 45 ? "partial" : "incorrect";
+          await tx.insert(grades).values({
+            id: gradeId,
+            userId,
+            questionId,
+            userAnswer: seed.answer.text,
+            score,
+            verdict,
+            result: {
+              score,
+              verdict,
+              covered_points: score >= 45 ? seed.keyPoints.slice(0, 2) : [],
+              missed_points: score >= 75 ? [] : seed.keyPoints.slice(score >= 45 ? 2 : 0),
+              mistakes: score < 45 ? ["The answer does not match how this works."] : [],
+              feedback:
+                score >= 75
+                  ? "Clear and right. You have the main idea."
+                  : score >= 45
+                    ? "On the right track, with a piece missing."
+                    : "Not yet. Read the model answer and try again next time.",
+              suggested_rating: score >= 75 ? "good" : score >= 45 ? "hard" : "again",
+            },
+            model: "demo",
+            createdAt: lastAt,
+          });
+        }
+
         // Review rows, so the stats page has something to draw.
         for (const [i, at] of reviewedAt.entries()) {
           const word = history[i]!;
@@ -291,7 +325,7 @@ export async function seedDemoData(handle: DbHandle, now = new Date()): Promise<
             action: "rate",
             rating: ratingFromWord(word),
             suggestedRating: null,
-            gradeId: null,
+            gradeId: i === reviewedAt.length - 1 ? gradeId : null,
             channel: "web",
             cardBefore: {
               status: "new",
@@ -336,6 +370,30 @@ export async function seedDemoData(handle: DbHandle, now = new Date()): Promise<
   await seedDeck(SEED_RESUME_DECK, "resume", resumeSourceId, 20);
   await seedDeck(SEED_TOPIC_DECK, "topics", topicSourceId, 14);
 
+  // The rest of the library: decks on subjects far from backend work, so the demo shows
+  // what Aeyhey is for. Each gets the source it would have been written from.
+  for (const deck of SEED_LIBRARY_DECKS) {
+    const sourceId = newId();
+    const details = Object.fromEntries(
+      (deck.topics ?? [])
+        .filter((topic) => topic.details)
+        .map((topic) => [topic.name, topic.details as string]),
+    );
+    await handle.db.insert(questionSources).values({
+      id: sourceId,
+      userId,
+      kind: deck.kind,
+      topics: deck.topics ? deck.topics.map((topic) => topic.name) : null,
+      topicDetails: details,
+      level: deck.level,
+      style: deck.style,
+      scope: deck.documentTitle ?? null,
+      countPerTopic: 5,
+      createdAt: new Date(now.getTime() - deck.createdDaysAgo * DAY_MS),
+    });
+    await seedDeck(deck, deck.kind, sourceId, deck.createdDaysAgo);
+  }
+
   // A demo instance should feel like it has been used for a while.
   await handle.db
     .update(settings)
@@ -349,9 +407,10 @@ export async function seedDemoData(handle: DbHandle, now = new Date()): Promise<
 
   const result: SeedResult = {
     userId,
-    links: SEED_LINKS.length,
+    links: SEED_LINKS.length + SEED_LIBRARY_LINKS.length,
     questions: questionCount,
-    decks: 3,
+    // The two decks above, the library's, and the built-in Links deck.
+    decks: 3 + SEED_LIBRARY_DECKS.length,
     reviews,
   };
 
@@ -398,3 +457,4 @@ export async function ensureDemoData(
 }
 
 export * from "./data";
+export * from "./library";

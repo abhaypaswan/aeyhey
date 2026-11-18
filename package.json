@@ -1,6 +1,6 @@
 {
   "name": "aeyhey-workspace",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "description": "Aeyhey: spaced repetition for your saved links and your interview prep.",
@@ -28,7 +28,9 @@
     "demo:reset": "pnpm --filter @aeyhey/core demo:reset",
     "api:spec": "pnpm --filter @aeyhey/core api:spec",
     "check:spdx": "node scripts/check-spdx.mjs",
-    "check:all": "pnpm format:check && pnpm lint && pnpm check:spdx && pnpm typecheck && pnpm test"
+    "check:all": "pnpm format:check && pnpm lint && pnpm check:spdx && pnpm typecheck && pnpm test",
+    "demo:local": "mkdir -p data/demo && DEMO_MODE=true AUTH_MODE=none DATA_DIR=$PWD/data/demo DATABASE_URL=file:$PWD/data/demo/aeyhey.db PUBLIC_URL=http://localhost:3000 pnpm --filter @aeyhey/core demo:seed && DEMO_MODE=true AUTH_MODE=none DATA_DIR=$PWD/data/demo DATABASE_URL=file:$PWD/data/demo/aeyhey.db PUBLIC_URL=http://localhost:3000 pnpm --filter @aeyhey/web exec next dev --port 3000",
+    "demo:local:reset": "mkdir -p data/demo && DEMO_MODE=true AUTH_MODE=none DATA_DIR=$PWD/data/demo DATABASE_URL=file:$PWD/data/demo/aeyhey.db PUBLIC_URL=http://localhost:3000 pnpm --filter @aeyhey/core demo:reset"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
