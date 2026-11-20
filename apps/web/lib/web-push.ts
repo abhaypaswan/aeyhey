@@ -97,3 +97,31 @@ export async function disableWebPush(): Promise<void> {
   await apiClient.delete("/api/push/subscribe", { endpoint: subscription.endpoint });
   await subscription.unsubscribe();
 }
+
+/**
+ * What to check when a test was sent but nothing appeared. The push service accepting it
+ * means the browser got it; the usual reason it does not show is the operating system
+ * blocking that browser's notifications, or a Focus or Do Not Disturb mode.
+ */
+export function notShowingHint(): string {
+  const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
+  const browser = /Edg\//.test(ua)
+    ? "Microsoft Edge"
+    : /Firefox\//.test(ua)
+      ? "Firefox"
+      : /Chrome\//.test(ua)
+        ? "Google Chrome"
+        : /Safari\//.test(ua)
+          ? "Safari"
+          : "your browser";
+  if (/Mac OS X|Macintosh/.test(ua) && !/iPhone|iPad/.test(ua)) {
+    return `Nothing showed up? Your Mac may be blocking ${browser}'s notifications. Check System Settings, Notifications, ${browser}, and that no Focus mode is on.`;
+  }
+  if (/Windows/.test(ua)) {
+    return `Nothing showed up? Windows may be blocking ${browser}'s notifications. Check Settings, System, Notifications, ${browser}, and that Do not disturb is off.`;
+  }
+  if (/Android/.test(ua)) {
+    return `Nothing showed up? Android may be blocking ${browser}'s notifications. Check its app notification settings and Do Not Disturb.`;
+  }
+  return "Nothing showed up? Your device may be blocking notifications from this browser, or a Focus or Do Not Disturb mode may be on.";
+}

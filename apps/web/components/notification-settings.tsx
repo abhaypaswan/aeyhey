@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from "react";
 import { apiClient, ApiRequestError } from "../lib/client";
-import { enableWebPush } from "../lib/web-push";
+import { enableWebPush, notShowingHint } from "../lib/web-push";
 import { Button, Card, Notice, Page, PageHeader } from "./ui";
 
 export function NotificationSettings({
@@ -28,6 +28,8 @@ export function NotificationSettings({
   });
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  // Set once a push test went out, so the "nothing showed up?" hint appears under it.
+  const [pushTested, setPushTested] = useState(false);
 
   useEffect(() => {
     if (!telegram || connection.connected) return;
@@ -103,9 +105,11 @@ export function NotificationSettings({
   async function test(channel: string): Promise<void> {
     setBusy(true);
     setMessage(null);
+    setPushTested(false);
     try {
       await apiClient.post("/api/notifications/test", { channel });
       setMessage({ ok: true, text: "Sent. Check that it arrived." });
+      setPushTested(channel === "push");
     } catch (error) {
       setMessage({
         ok: false,
@@ -141,6 +145,7 @@ export function NotificationSettings({
             Test
           </Button>
         </div>
+        {pushTested ? <p className="text-muted-foreground text-xs">{notShowingHint()}</p> : null}
       </Card>
 
       <Card className="flex flex-col gap-3">

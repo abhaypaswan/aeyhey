@@ -9,7 +9,13 @@
 
 import { useEffect, useState } from "react";
 import { apiClient, ApiRequestError } from "../lib/client";
-import { disableWebPush, enableWebPush, webPushState, type WebPushState } from "../lib/web-push";
+import {
+  disableWebPush,
+  enableWebPush,
+  notShowingHint,
+  webPushState,
+  type WebPushState,
+} from "../lib/web-push";
 import { Tabs, TabsList, TabsTab } from "@ui-sdk/react/tabs";
 import { Button, Card, CardTitle, Columns, Field, Notice, Page, cx } from "./ui";
 import { AppearanceSettings } from "./appearance-settings";
@@ -589,17 +595,21 @@ function PushRow() {
   const [state, setState] = useState<WebPushState | null>(null);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  // Set once a test went out, so the "nothing showed up?" hint appears under it.
+  const [tested, setTested] = useState(false);
 
   useEffect(() => {
     void webPushState().then(setState);
   }, []);
 
-  async function run(action: () => Promise<void>, done: string): Promise<void> {
+  async function run(action: () => Promise<void>, done: string, isTest = false): Promise<void> {
     setBusy(true);
     setResult(null);
+    setTested(false);
     try {
       await action();
       setResult({ ok: true, message: done });
+      setTested(isTest);
     } catch (thrown) {
       setResult({
         ok: false,
@@ -625,6 +635,7 @@ function PushRow() {
                 run(
                   () => apiClient.post("/api/notifications/test", { channel: "push" }),
                   "Sent. Check that it arrived.",
+                  true,
                 )
               }
             >
@@ -660,6 +671,7 @@ function PushRow() {
           : "Reminders as notifications on this device. Works best with Aeyhey installed to your home screen or desktop; on iPhone it has to be added to the home screen first."}
       </p>
       {result ? <Notice tone={result.ok ? "success" : "error"}>{result.message}</Notice> : null}
+      {tested ? <p className="text-muted-foreground text-xs">{notShowingHint()}</p> : null}
     </div>
   );
 }

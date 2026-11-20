@@ -320,7 +320,9 @@ export function createPushChannel(options: PushChannelOptions): NotificationChan
         title: "Aeyhey is set up",
         body: "This is a test notification. Reminders will look like this.",
         path: "/",
-        tag: "aeyhey-test",
+        // A tag of its own each time: with one shared tag, a second test would quietly
+        // replace the first in the notification centre and never pop up.
+        tag: `aeyhey-test-${Date.now()}`,
       });
     },
   };
