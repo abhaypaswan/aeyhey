@@ -13,7 +13,7 @@ Spaced repetition for your read-later pile and your next interview.
 [![Docker image](https://img.shields.io/badge/ghcr.io-aeyhey-blue?logo=docker&logoColor=white)](https://github.com/abhaypaswan/aeyhey/pkgs/container/aeyhey)
 [![Stars](https://img.shields.io/github/stars/abhaypaswan/aeyhey?style=flat)](https://github.com/abhaypaswan/aeyhey/stargazers)
 
-<img src="docs/images/demo.gif" alt="A link card set aside for later, then an interview question answered and graded" width="340">
+<img src="docs/images/demo.gif" alt="A question revealed and graded Good from the keyboard, a link set aside for later on the phone, then a coding agent noting its work and Aeyhey writing up the day" width="720">
 
 </div>
 
