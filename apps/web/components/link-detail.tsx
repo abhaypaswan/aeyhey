@@ -159,6 +159,18 @@ export function LinkDetails({ link }: { link: LinkFacts }) {
   const [addingTag, setAddingTag] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function copyLink(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(link.url);
+      setError(null);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setError("Could not copy the link. Select it and copy it by hand.");
+    }
+  }
 
   async function patch(body: Record<string, unknown>): Promise<boolean> {
     setError(null);
@@ -315,11 +327,21 @@ export function LinkDetails({ link }: { link: LinkFacts }) {
             {link.url}
           </a>
           <SdkButton
-            aria-label="Copy link"
-            onClick={() => void navigator.clipboard.writeText(link.url)}
-            className="text-muted-foreground hover:bg-quiet grid size-8 shrink-0 place-items-center rounded-full"
+            aria-label={copied ? "Link copied" : "Copy link"}
+            onClick={() => void copyLink()}
+            className={cx(
+              "hover:bg-quiet flex h-8 shrink-0 items-center gap-1.5 rounded-full transition-colors",
+              copied
+                ? "text-primary px-2.5 text-xs font-semibold"
+                : "text-muted-foreground w-8 justify-center",
+            )}
           >
-            <Copy size={16} aria-hidden="true" />
+            {copied ? (
+              <Check size={16} aria-hidden="true" />
+            ) : (
+              <Copy size={16} aria-hidden="true" />
+            )}
+            {copied ? <span aria-live="polite">Copied</span> : null}
           </SdkButton>
         </div>
       </Row>

@@ -11,6 +11,7 @@ import { BlockedUrlError } from "../../security/ssrf";
 import { extractHtml, guessContentType, hostAsSiteName } from "./generic";
 import { extractXPost, isXStatusUrl } from "./x";
 import { extractYouTube, isYouTubeUrl } from "./youtube";
+import { extractInstagram, isInstagramPostUrl } from "./instagram";
 import { extractPdf, looksLikePdf } from "./pdf";
 import { emptyExtract, tidyText, type ExtractedContent } from "./types";
 import { createLogger } from "../../logger";
@@ -62,6 +63,7 @@ export async function extractLink(input: ExtractLinkInput): Promise<ExtractedCon
     // produce nothing useful.
     if (isXStatusUrl(url)) return await extractXPost(url, options);
     if (isYouTubeUrl(url)) return await extractYouTube(url, options);
+    if (isInstagramPostUrl(url)) return await extractInstagram(url, options);
 
     // A .pdf URL still gets fetched the normal way, because the server may disagree about
     // what it is serving.
