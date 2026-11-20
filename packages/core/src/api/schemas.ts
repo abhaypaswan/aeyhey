@@ -616,7 +616,7 @@ export const PublicPageSettingsResponseSchema = z.object({
   url: z.string().nullable().describe("Where the page lives. Null until it has a handle."),
   urlPrefix: z
     .string()
-    .describe('Every page address starts with this, for example "https://aeyhey.com/u/".'),
+    .describe('Every page address starts with this, for example "https://aeyhey.app/u/".'),
   sharedCount: z.number().describe("Links on the page now."),
   suggestedHandle: z.string().nullable().describe("A free handle built from the user's name."),
   stats: PublicStatsSchema.nullable().describe("What the page's stats show. Null before setup."),

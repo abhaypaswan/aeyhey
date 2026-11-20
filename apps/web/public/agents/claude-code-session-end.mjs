@@ -24,7 +24,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { basename, extname } from "node:path";
 
-const URL_BASE = (process.env.AEYHEY_URL || "https://aeyhey.com").replace(/\/+$/, "");
+const URL_BASE = (process.env.AEYHEY_URL || "https://aeyhey.app").replace(/\/+$/, "");
 const TOKEN = process.env.AEYHEY_TOKEN || "";
 const DEBUG = Boolean(process.env.AEYHEY_DEBUG);
 const SEND_TITLES = process.env.AEYHEY_SEND_TITLES === "1";

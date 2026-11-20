@@ -33,7 +33,7 @@ export const BIO_MAX = 160;
 export const PUBLIC_PAGE_SIZE = 20;
 
 /**
- * Names a page cannot take. Some would collide with hosted subdomains (app.aeyhey.com),
+ * Names a page cannot take. Some would collide with hosted subdomains (aeyhey.app),
  * some would let a page pass for an official one. Kept in one list so the web, the API
  * and the hosted subdomain router all agree (FR-PUB-7).
  */

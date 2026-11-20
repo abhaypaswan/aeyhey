@@ -331,7 +331,7 @@ describe("the work side of the page", () => {
           {
             name: "Aeyhey",
             description: "Spaced repetition",
-            url: "https://aeyhey.com",
+            url: "https://aeyhey.app",
             tech: ["TypeScript"],
           },
         ],
@@ -345,7 +345,7 @@ describe("the work side of the page", () => {
     // Trimmed, and repeats dropped regardless of case.
     expect(page!.skills).toEqual(["Postgres", "Go"]);
     expect(page!.experience[0]!.company).toBe("Acme");
-    expect(page!.projects[0]!.url).toBe("https://aeyhey.com");
+    expect(page!.projects[0]!.url).toBe("https://aeyhey.app");
   });
 
   it("refuses a link that is not a web address", async () => {

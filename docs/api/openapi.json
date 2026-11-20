@@ -4024,7 +4024,7 @@
                     },
                     "urlPrefix": {
                       "type": "string",
-                      "description": "Every page address starts with this, for example \"https://aeyhey.com/u/\"."
+                      "description": "Every page address starts with this, for example \"https://aeyhey.app/u/\"."
                     },
                     "sharedCount": {
                       "type": "number",
@@ -4710,7 +4710,7 @@
                     },
                     "urlPrefix": {
                       "type": "string",
-                      "description": "Every page address starts with this, for example \"https://aeyhey.com/u/\"."
+                      "description": "Every page address starts with this, for example \"https://aeyhey.app/u/\"."
                     },
                     "sharedCount": {
                       "type": "number",

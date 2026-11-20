@@ -1324,7 +1324,7 @@ export function createApi(deps: ApiDeps) {
 
 /**
  * Where a handle's page lives. The hosted edition serves the same page on
- * <handle>.aeyhey.com as well (PRD 28.6), but the path always works.
+ * <handle>.aeyhey.app as well (PRD 28.6), but the path always works.
  */
 export function publicPageUrl(publicUrl: string, pageHandle: string): string {
   return `${publicUrl.replace(/\/+$/, "")}/u/${pageHandle}`;

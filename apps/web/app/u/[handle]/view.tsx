@@ -725,7 +725,7 @@ export function PublicPageView({
           <footer className={`${styles.footer} ${styles.noPrint}`}>
             {page.showFooter ? (
               <>
-                <a className={styles.cta} href="https://aeyhey.com">
+                <a className={styles.cta} href="https://aeyhey.app">
                   Create your reading profile
                 </a>
                 <span className={styles.madeWith}>Made with Aeyhey</span>
