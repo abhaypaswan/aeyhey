@@ -14,6 +14,7 @@ export type TokenPurpose =
   | "email-verify"
   | "email-unsubscribe"
   | "telegram-webhook"
+  | "telegram-login"
   | "link-code";
 
 function sign(purpose: TokenPurpose, body: string, appSecret: string): string {

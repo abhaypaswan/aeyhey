@@ -245,7 +245,9 @@ a home server, it uses long polling instead and works the same.
 Talk to the bot the same way you talk to aey in the app. Send a link to save it, ask about what you
 have saved, ask for a question deck, or ask how Aeyhey works. At send time you get one message per
 card with its own buttons. Reply to a question message with your answer and the bot grades it.
-Commands remain as optional shortcuts: `/today`, `/pause`, `/resume`, `/settings`.
+Send `/login` in Telegram to connect from the bot: Aeyhey opens the normal sign-in when needed,
+then asks you to approve that chat. Settings shows the current connection and lets you disconnect
+it. Commands remain as optional shortcuts: `/today`, `/pause`, `/resume`, `/settings`.
 
 ## Email setup
 

@@ -2,7 +2,7 @@
 // Settings (PRD 12.1 screen 11, 8.4).
 
 import { redirect } from "next/navigation";
-import { repos } from "@aeyhey/core";
+import { notify, repos } from "@aeyhey/core";
 import { env as loadEnvFn, lockedSettingKeys } from "@aeyhey/core";
 import { accountPage, pageState, flags } from "../../lib/server";
 import { timezoneOptions } from "../../lib/timezones";
@@ -22,6 +22,7 @@ export default async function SettingsPage({
   const { scope, user } = state.context;
   const settings = await repos.loadSettings(scope);
   const environment = loadEnvFn();
+  const telegramConnection = await notify.findTelegramConnection(scope.handle, user.id);
 
   return (
     <SettingsView
@@ -41,6 +42,7 @@ export default async function SettingsPage({
       accountHref={await accountPage()}
       channels={{
         telegramConfigured: Boolean(environment.TELEGRAM_BOT_TOKEN),
+        telegramConnected: Boolean(telegramConnection),
         emailConfigured: Boolean(environment.SMTP_URL),
       }}
     />

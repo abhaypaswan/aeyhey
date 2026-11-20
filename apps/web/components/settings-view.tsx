@@ -170,7 +170,7 @@ export function SettingsView({
   timezones: TimezoneOption[];
   locked: string[];
   flags: Flags;
-  channels: { telegramConfigured: boolean; emailConfigured: boolean };
+  channels: { telegramConfigured: boolean; telegramConnected: boolean; emailConfigured: boolean };
 }) {
   // The AI tab is only for choosing a model: your own key, or a local Ollama. Where the
   // server runs the AI for everyone (the hosted edition) there is nothing to choose.
@@ -511,6 +511,7 @@ export function SettingsView({
             <ChannelRow
               name="Telegram"
               configured={channels.telegramConfigured}
+              connected={channels.telegramConnected}
               body={
                 channels.telegramConfigured
                   ? "One message per card, each with its own buttons. Reply to a question to have it graded."
@@ -601,11 +602,13 @@ export function SettingsView({
 function ChannelRow({
   name,
   configured,
+  connected = false,
   body,
   channel,
 }: {
   name: string;
   configured: boolean;
+  connected?: boolean;
   body: string;
   channel: "push" | "telegram" | "email";
 }) {
@@ -644,7 +647,7 @@ function ChannelRow({
       {result ? <Notice tone={result.ok ? "success" : "error"}>{result.message}</Notice> : null}
       {channel === "telegram" && configured ? (
         <a href="/settings/notifications" className="text-primary text-xs font-semibold underline">
-          Connect Telegram
+          {connected ? "Connected · Manage" : "Connect Telegram"}
         </a>
       ) : null}
     </div>

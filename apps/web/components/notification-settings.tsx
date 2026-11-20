@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Notification channels (PRD 8.4 FR-SET-3, 14).
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiClient, ApiRequestError } from "../lib/client";
 import { Button, Card, Field, Input, Notice, Page, PageHeader } from "./ui";
 
@@ -23,18 +23,52 @@ function urlBase64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
 
 export function NotificationSettings({
   telegramConfigured,
+  telegramConnected,
+  telegramUsername,
   emailConfigured,
   verified,
 }: {
   telegramConfigured: boolean;
+  telegramConnected: boolean;
+  telegramUsername: string | null;
   emailConfigured: boolean;
   verified: string | null;
 }) {
   const [pushState, setPushState] = useState<string | null>(null);
-  const [telegram, setTelegram] = useState<{ deepLink: string; code: string } | null>(null);
+  const [telegram, setTelegram] = useState<{
+    deepLink: string;
+    code: string;
+    expiresAt: string;
+  } | null>(null);
+  const [connection, setConnection] = useState({
+    connected: telegramConnected,
+    username: telegramUsername,
+  });
   const [emailAddress, setEmailAddress] = useState("");
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!telegram || connection.connected) return;
+    const timer = window.setInterval(() => {
+      if (Date.now() > new Date(telegram.expiresAt).getTime()) {
+        setTelegram(null);
+        setMessage({ ok: false, text: "That connection link expired. Try again." });
+        return;
+      }
+      void apiClient
+        .get<{ connected: boolean; username: string | null }>("/api/telegram/connection")
+        .then((next) => {
+          if (next.connected) {
+            setConnection(next);
+            setTelegram(null);
+            setMessage({ ok: true, text: "Telegram connected." });
+          }
+        })
+        .catch(() => undefined);
+    }, 2_000);
+    return () => window.clearInterval(timer);
+  }, [telegram, connection.connected]);
 
   async function enablePush(): Promise<void> {
     setBusy(true);
@@ -97,7 +131,7 @@ export function NotificationSettings({
     setBusy(true);
     setMessage(null);
     try {
-      const result = await apiClient.post<{ deepLink: string; code: string }>(
+      const result = await apiClient.post<{ deepLink: string; code: string; expiresAt: string }>(
         "/api/telegram/link-code",
       );
       setTelegram(result);
@@ -105,6 +139,24 @@ export function NotificationSettings({
       setMessage({
         ok: false,
         text: error instanceof ApiRequestError ? error.message : "Could not get a link.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disconnectTelegram(): Promise<void> {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await apiClient.delete("/api/telegram/connection");
+      setConnection({ connected: false, username: null });
+      setTelegram(null);
+      setMessage({ ok: true, text: "Telegram disconnected." });
+    } catch (error) {
+      setMessage({
+        ok: false,
+        text: error instanceof ApiRequestError ? error.message : "Could not disconnect Telegram.",
       });
     } finally {
       setBusy(false);
@@ -182,29 +234,45 @@ export function NotificationSettings({
               One message per card, each with its own buttons, so you can deal with them in any
               order. Reply to a question with your answer and the bot grades it.
             </p>
-            {telegram ? (
+            {connection.connected ? (
               <Notice tone="success">
+                <span className="font-semibold">Connected</span>
+                <span className="mt-1 block text-xs">
+                  {connection.username
+                    ? `Messages and reminders go to @${connection.username}.`
+                    : "Messages and reminders go to your connected Telegram chat."}
+                </span>
+              </Notice>
+            ) : telegram ? (
+              <Notice tone="info">
                 <a
                   href={telegram.deepLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-semibold underline"
                 >
-                  Open Telegram to finish connecting
+                  Open AeyheyBot
                 </a>
                 <span className="mt-1 block text-xs">
-                  Or send <code className="font-mono">/start {telegram.code}</code> to the bot. The
-                  code works for 10 minutes.
+                  Approve the connection in Telegram. This page will update automatically.
                 </span>
               </Notice>
             ) : null}
             <div className="flex gap-2">
-              <Button tone="primary" disabled={busy} onClick={connectTelegram}>
-                Connect Telegram
-              </Button>
-              <Button disabled={busy} onClick={() => test("telegram")}>
-                Test
-              </Button>
+              {connection.connected ? (
+                <>
+                  <Button disabled={busy} onClick={() => test("telegram")}>
+                    Test
+                  </Button>
+                  <Button tone="danger" disabled={busy} onClick={disconnectTelegram}>
+                    Disconnect
+                  </Button>
+                </>
+              ) : (
+                <Button tone="primary" disabled={busy} onClick={connectTelegram}>
+                  Connect Telegram
+                </Button>
+              )}
             </div>
           </>
         ) : (

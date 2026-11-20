@@ -1,8 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, it } from "vitest";
-import { renderAssistantReply } from "../telegram-updates";
+import { security } from "@aeyhey/core";
+import { renderAssistantReply, telegramLoginUrl } from "../telegram-updates";
 
 describe("Telegram assistant replies", () => {
+  it("creates a short-lived approval link bound to the Telegram chat", () => {
+    const appSecret = "s".repeat(48);
+    const url = new URL(
+      telegramLoginUrl({
+        publicUrl: "https://aeyhey.app",
+        appSecret,
+        chatId: "12345",
+        username: "learner",
+      }),
+    );
+    const verified = security.verifyToken<{ chatId: string; username: string }>({
+      purpose: "telegram-login",
+      token: url.searchParams.get("token")!,
+      appSecret,
+    });
+
+    expect(url.pathname).toBe("/telegram/connect");
+    expect(verified).toEqual({ ok: true, payload: { chatId: "12345", username: "learner" } });
+  });
+
   it("renders the same answer and sources returned by aey", () => {
     const text = renderAssistantReply({
       intent: "ask",

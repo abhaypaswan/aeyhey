@@ -11,6 +11,7 @@ import type { DbHandle } from "@aeyhey/core/db";
 import type { Env } from "@aeyhey/core";
 import type { Registry } from "@aeyhey/core/extensions";
 import { assistant, jobs, notify, repos } from "@aeyhey/core";
+import { security } from "@aeyhey/core";
 import { ai as aiModule } from "@aeyhey/core";
 import { applyCardAction } from "@aeyhey/core/sessions";
 import { answerQuestion, revealAnswer } from "@aeyhey/core/sessions";
@@ -50,6 +51,24 @@ function aiDeps(deps: TelegramDeps) {
 }
 
 const TELEGRAM_TEXT_LIMIT = 4096;
+
+export function telegramLoginUrl(input: {
+  publicUrl: string;
+  appSecret: string;
+  chatId: string;
+  username?: string;
+}): string {
+  const signed = security.signToken({
+    purpose: "telegram-login",
+    payload: {
+      chatId: input.chatId,
+      ...(input.username ? { username: input.username } : {}),
+    },
+    appSecret: input.appSecret,
+    ttlMs: security.TEN_MINUTES_MS,
+  });
+  return `${input.publicUrl}/telegram/connect?token=${encodeURIComponent(signed.token)}`;
+}
 
 function wantsDeckNow(text: string): boolean {
   return /\b(make|create|build|generate|write)\b[\s\S]{0,80}\b(deck|questions?|quiz)\b|\b(deck|questions?|quiz)\b[\s\S]{0,80}\b(make|create|build|generate|write)\b/i.test(
@@ -258,14 +277,38 @@ async function handleMessage(
   const text = (message.text ?? "").trim();
   if (text === "") return;
 
-  // /start <code> is the only command that works before the chat is linked.
+  async function sendLoginLink(): Promise<void> {
+    const existing = await notify.findUserByChat(deps.handle, chatId);
+    if (existing) {
+      await api.sendMessage({
+        chatId,
+        text: "<b>Connected.</b> This chat is already linked to your Aeyhey account.",
+        parseMode: "HTML",
+        buttons: [
+          [{ text: "Manage connection", url: `${deps.env.PUBLIC_URL}/settings/notifications` }],
+        ],
+      });
+      return;
+    }
+
+    const url = telegramLoginUrl({
+      publicUrl: deps.env.PUBLIC_URL,
+      appSecret: deps.appSecret,
+      chatId,
+      ...(message.from?.username ? { username: message.from.username } : {}),
+    });
+    await api.sendMessage({
+      chatId,
+      text: "Connect this chat to your Aeyhey account. You may be asked to sign in, then you can approve the connection.",
+      buttons: [[{ text: "Connect to Aeyhey", url }]],
+    });
+  }
+
+  // /start <code> keeps old links working. A plain /start uses the smoother web approval.
   if (text.startsWith("/start")) {
     const code = text.slice("/start".length).trim();
     if (!code) {
-      await api.sendMessage({
-        chatId,
-        text: "Open Settings in Aeyhey and tap Connect Telegram to get your link.",
-      });
+      await sendLoginLink();
       return;
     }
 
@@ -285,12 +328,14 @@ async function handleMessage(
     return;
   }
 
+  if (text.startsWith("/login")) {
+    await sendLoginLink();
+    return;
+  }
+
   const userId = await notify.findUserByChat(deps.handle, chatId);
   if (!userId) {
-    await api.sendMessage({
-      chatId,
-      text: "This chat is not connected yet. Open Settings in Aeyhey and tap Connect Telegram.",
-    });
+    await sendLoginLink();
     return;
   }
 
@@ -404,7 +449,7 @@ async function handleMessage(
   if (text.startsWith("/")) {
     await api.sendMessage({
       chatId,
-      text: "You can talk to me normally. I can save links, answer from your library, create question decks and help with AeyHey. Shortcuts: /today, /pause, /resume, /settings.",
+      text: "You can talk to me normally. I can answer from your library, save what you send, create practice decks and help with Aeyhey. Shortcuts: /today, /pause, /resume, /settings.",
     });
     return;
   }

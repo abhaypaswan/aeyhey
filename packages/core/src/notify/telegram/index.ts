@@ -141,6 +141,89 @@ export async function findChatForUser(handle: DbHandle, userId: string): Promise
   return row?.chatId && row.linkedAt ? row.chatId : null;
 }
 
+export interface TelegramConnection {
+  chatId: string;
+  username: string | null;
+  linkedAt: Date;
+}
+
+export async function findTelegramConnection(
+  handle: DbHandle,
+  userId: string,
+): Promise<TelegramConnection | null> {
+  const { telegramLinks } = handle.schema;
+  const rows = await handle.db
+    .select({
+      chatId: telegramLinks.chatId,
+      username: telegramLinks.username,
+      linkedAt: telegramLinks.linkedAt,
+    })
+    .from(telegramLinks)
+    .where(eq(telegramLinks.userId, userId))
+    .limit(1);
+  const row = rows[0];
+  if (!row?.chatId || !row.linkedAt) return null;
+  return { chatId: row.chatId, username: row.username, linkedAt: row.linkedAt };
+}
+
+/** Connects this chat to one account, replacing either side's previous connection. */
+export async function connectTelegramChat(
+  handle: DbHandle,
+  input: { userId: string; chatId: string; username?: string },
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const { telegramLinks } = handle.schema;
+  const now = new Date();
+
+  // Do not let a still-valid approval URL move someone else's connected chat. The old
+  // account must disconnect it first, which also makes ownership changes visible.
+  const currentUser = await findUserByChat(handle, input.chatId);
+  if (currentUser && currentUser !== input.userId) {
+    return {
+      ok: false,
+      reason: "This Telegram chat is already connected to another Aeyhey account.",
+    };
+  }
+
+  await handle.db
+    .insert(telegramLinks)
+    .values({
+      userId: input.userId,
+      chatId: input.chatId,
+      username: input.username ?? null,
+      linkedAt: now,
+      linkCode: null,
+      linkCodeExpiresAt: null,
+    })
+    .onConflictDoUpdate({
+      target: telegramLinks.userId,
+      set: {
+        chatId: input.chatId,
+        username: input.username ?? null,
+        linkedAt: now,
+        linkCode: null,
+        linkCodeExpiresAt: null,
+      },
+    });
+
+  log.info("linked a telegram chat", { userId: input.userId });
+  return { ok: true };
+}
+
+export async function disconnectTelegramChat(handle: DbHandle, userId: string): Promise<void> {
+  const { telegramLinks } = handle.schema;
+  await handle.db
+    .update(telegramLinks)
+    .set({
+      chatId: null,
+      username: null,
+      linkedAt: null,
+      linkCode: null,
+      linkCodeExpiresAt: null,
+    })
+    .where(eq(telegramLinks.userId, userId));
+  log.info("disconnected a telegram chat", { userId });
+}
+
 // ---------------------------------------------------------------- card lookup
 
 /**
@@ -246,11 +329,14 @@ export async function saveLinkFromMessage(
 
 // ---------------------------------------------------------------- the channel
 
+export type TelegramButton =
+  { text: string; callback_data: string } | { text: string; url: string };
+
 export interface TelegramApi {
   sendMessage(input: {
     chatId: string;
     text: string;
-    buttons?: { text: string; callback_data: string }[][];
+    buttons?: TelegramButton[][];
     parseMode?: "HTML";
     disablePreview?: boolean;
   }): Promise<{ messageId: number }>;
@@ -259,7 +345,7 @@ export interface TelegramApi {
     messageId: number;
     text: string;
     parseMode?: "HTML";
-    buttons?: { text: string; callback_data: string }[][];
+    buttons?: TelegramButton[][];
   }): Promise<void>;
   answerCallback(input: { callbackId: string; text?: string }): Promise<void>;
   getMe(): Promise<{ username: string }>;
