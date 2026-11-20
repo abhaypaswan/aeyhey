@@ -204,7 +204,7 @@ export async function callAi<N extends ContractName>(
   };
 
   let lastError: unknown;
-  let tokensIn = estimatedInputTokens;
+  let tokensIn = 0;
   let tokensOut = 0;
 
   for (const [index, prompt] of [input.prompt, null].entries()) {
@@ -220,8 +220,8 @@ export async function callAi<N extends ContractName>(
         : prompt;
 
       const outcome = await deps.limiter.run(() => attempt(promptToSend));
-      tokensIn = outcome.inputTokens;
-      tokensOut = outcome.outputTokens;
+      tokensIn += outcome.inputTokens;
+      tokensOut += outcome.outputTokens;
 
       // generateObject validates against the schema, but we parse again so transforms
       // such as whitespace tidying actually apply to what we store.
@@ -241,6 +241,11 @@ export async function callAi<N extends ContractName>(
       };
     } catch (error) {
       lastError = error;
+
+      if (error instanceof NoObjectGeneratedError) {
+        tokensIn += error.usage?.inputTokens ?? estimatedInputTokens;
+        tokensOut += error.usage?.outputTokens ?? 0;
+      }
 
       // A schema problem is worth one repair attempt. A refused key or an unreachable
       // host is not: retrying would just cost another call.
@@ -262,7 +267,12 @@ export async function callAi<N extends ContractName>(
       ? `The model could not produce valid ${input.contract} output, even after a repair attempt.`
       : explainProviderError(lastError, credential);
 
-  await record({ ok: false, inputTokens: tokensIn, outputTokens: tokensOut, error: message });
+  await record({
+    ok: false,
+    inputTokens: tokensIn || estimatedInputTokens,
+    outputTokens: tokensOut,
+    error: message,
+  });
 
   throw lastError instanceof AiContractError
     ? new AiContractError(input.contract, message)
