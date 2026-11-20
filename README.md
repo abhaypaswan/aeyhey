@@ -242,9 +242,10 @@ rest with AES-256-GCM and never sent back to the browser after you save them.
 If your `PUBLIC_URL` is an https address, Aeyhey uses a webhook. If it is not, which is normal on
 a home server, it uses long polling instead and works the same.
 
-At send time you get one message per card with its own buttons. Reply to a question message with
-your answer and the bot grades it. Commands: `/today`, `/add <url or topic>`, `/pause`, `/resume`,
-`/settings`.
+Talk to the bot the same way you talk to aey in the app. Send a link to save it, ask about what you
+have saved, ask for a question deck, or ask how Aeyhey works. At send time you get one message per
+card with its own buttons. Reply to a question message with your answer and the bot grades it.
+Commands remain as optional shortcuts: `/today`, `/pause`, `/resume`, `/settings`.
 
 ## Email setup
 

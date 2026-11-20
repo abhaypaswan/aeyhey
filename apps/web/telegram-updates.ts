@@ -10,7 +10,7 @@
 import type { DbHandle } from "@aeyhey/core/db";
 import type { Env } from "@aeyhey/core";
 import type { Registry } from "@aeyhey/core/extensions";
-import { notify, repos } from "@aeyhey/core";
+import { assistant, jobs, notify, repos } from "@aeyhey/core";
 import { ai as aiModule } from "@aeyhey/core";
 import { applyCardAction } from "@aeyhey/core/sessions";
 import { answerQuestion, revealAnswer } from "@aeyhey/core/sessions";
@@ -47,6 +47,95 @@ function aiDeps(deps: TelegramDeps) {
       requestsPerMinute: deps.env.AI_RPM,
     }),
   };
+}
+
+const TELEGRAM_TEXT_LIMIT = 4096;
+
+function wantsDeckNow(text: string): boolean {
+  return /\b(make|create|build|generate|write)\b[\s\S]{0,80}\b(deck|questions?|quiz)\b|\b(deck|questions?|quiz)\b[\s\S]{0,80}\b(make|create|build|generate|write)\b/i.test(
+    text,
+  );
+}
+
+export function renderAssistantReply(reply: assistant.AssistantReply): string {
+  const lines = [reply.reply.trim()];
+
+  if (reply.answer?.sources.length) {
+    lines.push("", "Sources");
+    for (const source of reply.answer.sources.slice(0, 5)) {
+      lines.push(`${source.title}\n${source.href}`);
+    }
+  }
+
+  if (reply.blocked?.actionHref) {
+    lines.push("", `Continue here: ${reply.blocked.actionHref}`);
+  }
+
+  if (reply.options?.length) {
+    lines.push("", "You can say:");
+    for (const option of reply.options) lines.push(`• ${option.label}`);
+  }
+
+  const text = lines.filter((line, index) => line !== "" || lines[index - 1] !== "").join("\n");
+  if (text.length <= TELEGRAM_TEXT_LIMIT) return text;
+  return `${text.slice(0, TELEGRAM_TEXT_LIMIT - 1).trimEnd()}…`;
+}
+
+async function answerAsAey(
+  deps: TelegramDeps,
+  api: notify.TelegramApi,
+  chatId: string,
+  userId: string,
+  text: string,
+): Promise<void> {
+  const scope = repos.scopeFor(deps.handle, userId);
+  const reply = await assistant.respond(
+    scope,
+    {
+      ai: aiDeps(deps),
+      saveLinks: async (message) => {
+        const result = await repos.saveLinks(scope, {
+          text: message,
+          note: null,
+          source: "telegram",
+        });
+        for (const link of result.created) {
+          await jobs.enqueue(deps.handle, {
+            type: "extract_link",
+            userId,
+            payload: { linkId: link.id },
+            dedupeKey: `extract:${link.id}`,
+          });
+        }
+        return result;
+      },
+    },
+    { message: text },
+  );
+
+  let response = renderAssistantReply(reply);
+  if (reply.proposal) {
+    if (wantsDeckNow(text)) {
+      const sourceId = await repos.createTopicSource(scope, {
+        topics: reply.proposal.topics,
+        level: reply.proposal.level,
+        style: reply.proposal.style,
+        countPerTopic: reply.proposal.countPerTopic,
+      });
+      await jobs.enqueue(deps.handle, {
+        type: "generate_questions",
+        userId,
+        payload: { sourceId },
+        dedupeKey: `generate:${sourceId}`,
+      });
+      response = `${response}\n\nI am writing the questions now. They will appear in AeyHey when they are ready.`;
+    } else {
+      const topics = reply.proposal.topics.join(", ");
+      response = `${response}\n\nIf you want it, say “Create a deck about ${topics}.”`;
+    }
+  }
+
+  await api.sendMessage({ chatId, text: response.slice(0, TELEGRAM_TEXT_LIMIT) });
 }
 
 export async function handleTelegramUpdate(deps: TelegramDeps, raw: unknown): Promise<void> {
@@ -308,65 +397,17 @@ async function handleMessage(
 
   if (text.startsWith("/add")) {
     const payload = text.slice("/add".length).trim();
-    await saveOrTopic(deps, api, chatId, userId, payload);
+    await answerAsAey(deps, api, chatId, userId, payload);
     return;
   }
 
   if (text.startsWith("/")) {
     await api.sendMessage({
       chatId,
-      text: "Commands: /today, /add, /pause, /pause forever, /resume, /settings. Or send a link to save it.",
+      text: "You can talk to me normally. I can save links, answer from your library, create question decks and help with AeyHey. Shortcuts: /today, /pause, /resume, /settings.",
     });
     return;
   }
 
-  await saveOrTopic(deps, api, chatId, userId, text);
-}
-
-/** A URL is saved; anything else is treated as a topic to generate questions from. */
-async function saveOrTopic(
-  deps: TelegramDeps,
-  api: notify.TelegramApi,
-  chatId: string,
-  userId: string,
-  text: string,
-): Promise<void> {
-  if (text === "") {
-    await api.sendMessage({ chatId, text: "Send a link to save, or a topic to study." });
-    return;
-  }
-
-  const saved = await notify.saveLinkFromMessage(deps.handle, { userId, text });
-
-  if (saved.saved > 0) {
-    await api.sendMessage({
-      chatId,
-      text: `Saved${saved.saved > 1 ? ` ${saved.saved} links` : ""}. I'll bring it back.`,
-    });
-    return;
-  }
-  if (saved.duplicates > 0) {
-    await api.sendMessage({ chatId, text: "You already saved that one." });
-    return;
-  }
-
-  // No URL in it, so treat the message as a topic.
-  const scope = repos.scopeFor(deps.handle, userId);
-  const sourceId = await repos.createTopicSource(scope, {
-    topics: [text.slice(0, 80)],
-    countPerTopic: 5,
-  });
-
-  const { jobs } = await import("@aeyhey/core");
-  await jobs.enqueue(deps.handle, {
-    type: "generate_questions",
-    userId,
-    payload: { sourceId },
-    dedupeKey: `generate:${sourceId}`,
-  });
-
-  await api.sendMessage({
-    chatId,
-    text: `Writing questions about "${text.slice(0, 60)}". They will be ready in the app shortly.`,
-  });
+  await answerAsAey(deps, api, chatId, userId, text);
 }
