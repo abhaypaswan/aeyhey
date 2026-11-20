@@ -8,17 +8,12 @@ import { NotificationSettings } from "../../../components/notification-settings"
 
 export const dynamic = "force-dynamic";
 
-export default async function NotificationSettingsPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | undefined>>;
-}) {
+export default async function NotificationSettingsPage() {
   const state = await pageState();
   if (state.state === "needs_setup") redirect("/setup");
   if (state.state === "needs_login") redirect("/login");
 
   const environment = loadEnvFn();
-  const params = await searchParams;
   const connection = await notify.findTelegramConnection(
     state.context.scope.handle,
     state.context.user.id,
@@ -29,8 +24,6 @@ export default async function NotificationSettingsPage({
       telegramConfigured={Boolean(environment.TELEGRAM_BOT_TOKEN)}
       telegramConnected={Boolean(connection)}
       telegramUsername={connection?.username ?? null}
-      emailConfigured={Boolean(environment.SMTP_URL)}
-      verified={params["verified"] ?? null}
     />
   );
 }

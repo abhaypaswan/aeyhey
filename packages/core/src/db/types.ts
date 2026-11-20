@@ -143,7 +143,7 @@ export const REVIEW_ACTIONS = [
 ] as const;
 export type ReviewAction = (typeof REVIEW_ACTIONS)[number];
 
-export const CHANNELS = ["web", "telegram", "email", "push"] as const;
+export const CHANNELS = ["web", "telegram", "push"] as const;
 export type Channel = (typeof CHANNELS)[number];
 
 export const DEVICE_PLATFORMS = ["ios", "android"] as const;

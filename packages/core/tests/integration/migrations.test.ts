@@ -51,9 +51,7 @@ describe("migrations", () => {
       "push_subscriptions",
       "telegram_links",
       "telegram_messages",
-      "email_channels",
       "notifications",
-      "action_tokens",
       "api_tokens",
       "auth_codes",
       "devices",
@@ -121,7 +119,7 @@ describe("migrations", () => {
     const row = {
       id: "n1",
       userId: "u1",
-      channel: "email" as const,
+      channel: "telegram" as const,
       slotTime: slot,
       createdAt: new Date(),
     };

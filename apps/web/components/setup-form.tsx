@@ -85,7 +85,7 @@ export function SetupForm() {
           />
         </Field>
 
-        <Field label="Email" hint="Optional. Only used to sign in and for reminder emails.">
+        <Field label="Email" hint="Optional. Only used to sign in.">
           <Input
             type="email"
             autoComplete="username"

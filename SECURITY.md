@@ -36,7 +36,7 @@ Out of scope:
 
 - Problems in your own deployment, for example running with `AUTH_MODE=none` on a public network
   or exposing the app without HTTPS. The README says what each setting means.
-- Issues in third party AI providers, Telegram, or your SMTP host.
+- Issues in third party AI providers or Telegram.
 - Findings that need `FETCH_ALLOW_PRIVATE=true`, which is documented as a trusted-network option.
 - Denial of service through very large inputs on a self-hosted single-user instance.
 

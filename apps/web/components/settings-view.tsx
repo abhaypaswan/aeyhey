@@ -7,8 +7,9 @@
 // greyed out and labelled, so a change that would do nothing is visible rather than
 // mysterious (PRD 16.2).
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiClient, ApiRequestError } from "../lib/client";
+import { disableWebPush, enableWebPush, webPushState, type WebPushState } from "../lib/web-push";
 import { Tabs, TabsList, TabsTab } from "@ui-sdk/react/tabs";
 import { Button, Card, CardTitle, Columns, Field, Notice, Page, cx } from "./ui";
 import { AppearanceSettings } from "./appearance-settings";
@@ -44,7 +45,6 @@ interface Settings {
 interface Flags {
   byoKeys: boolean;
   ollama: boolean;
-  customSmtp: boolean;
   customTelegramBot: boolean;
   credits: boolean;
 }
@@ -170,7 +170,7 @@ export function SettingsView({
   timezones: TimezoneOption[];
   locked: string[];
   flags: Flags;
-  channels: { telegramConfigured: boolean; telegramConnected: boolean; emailConfigured: boolean };
+  channels: { telegramConfigured: boolean; telegramConnected: boolean };
 }) {
   // The AI tab is only for choosing a model: your own key, or a local Ollama. Where the
   // server runs the AI for everyone (the hosted edition) there is nothing to choose.
@@ -502,12 +502,7 @@ export function SettingsView({
 
         {tab === "notifications" ? (
           <Card className="flex flex-col gap-4">
-            <ChannelRow
-              name="Web push"
-              configured
-              body="Install Aeyhey to your home screen or desktop, then turn this on. On iPhone it has to be added to the home screen first."
-              channel="push"
-            />
+            <PushRow />
             <ChannelRow
               name="Telegram"
               configured={channels.telegramConfigured}
@@ -518,16 +513,6 @@ export function SettingsView({
                   : "Set TELEGRAM_BOT_TOKEN in your environment and restart to turn this on."
               }
               channel="telegram"
-            />
-            <ChannelRow
-              name="Email"
-              configured={channels.emailConfigured}
-              body={
-                channels.emailConfigured
-                  ? "One mail per session. Link cards have buttons that work without opening the app."
-                  : "Set SMTP_URL in your environment and restart to turn this on."
-              }
-              channel="email"
             />
           </Card>
         ) : null}
@@ -599,6 +584,86 @@ export function SettingsView({
   );
 }
 
+/** Web push for this browser: its state, a way to turn it on or off, and a test. */
+function PushRow() {
+  const [state, setState] = useState<WebPushState | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    void webPushState().then(setState);
+  }, []);
+
+  async function run(action: () => Promise<void>, done: string): Promise<void> {
+    setBusy(true);
+    setResult(null);
+    try {
+      await action();
+      setResult({ ok: true, message: done });
+    } catch (thrown) {
+      setResult({
+        ok: false,
+        message: thrown instanceof Error ? thrown.message : "That did not work.",
+      });
+    } finally {
+      setState(await webPushState());
+      setBusy(false);
+    }
+  }
+
+  const on = state === "on";
+  return (
+    <div className="border-border flex flex-col gap-2 border-b pb-4 last:border-0 last:pb-0">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-semibold">Web push</span>
+        <div className="flex items-center gap-1">
+          {on ? (
+            <Button
+              tone="ghost"
+              disabled={busy}
+              onClick={() =>
+                run(
+                  () => apiClient.post("/api/notifications/test", { channel: "push" }),
+                  "Sent. Check that it arrived.",
+                )
+              }
+            >
+              Test
+            </Button>
+          ) : null}
+          {state === "unsupported" ? (
+            <span className="text-muted-foreground text-xs">Not available here</span>
+          ) : on ? (
+            <Button
+              tone="ghost"
+              disabled={busy}
+              onClick={() => run(disableWebPush, "Push is off for this browser.")}
+            >
+              Turn off
+            </Button>
+          ) : (
+            <Button
+              tone="primary"
+              disabled={busy || state === null}
+              onClick={() =>
+                run(enableWebPush, "This browser will get reminders. Use Test to check it.")
+              }
+            >
+              {busy ? "Turning on" : "Turn on"}
+            </Button>
+          )}
+        </div>
+      </div>
+      <p className="text-muted-foreground text-xs">
+        {on
+          ? "On for this browser. Turn it on in each browser or phone you want reminders on."
+          : "Reminders as notifications on this device. Works best with Aeyhey installed to your home screen or desktop; on iPhone it has to be added to the home screen first."}
+      </p>
+      {result ? <Notice tone={result.ok ? "success" : "error"}>{result.message}</Notice> : null}
+    </div>
+  );
+}
+
 function ChannelRow({
   name,
   configured,
@@ -610,7 +675,7 @@ function ChannelRow({
   configured: boolean;
   connected?: boolean;
   body: string;
-  channel: "push" | "telegram" | "email";
+  channel: "telegram";
 }) {
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -645,7 +710,7 @@ function ChannelRow({
       </div>
       <p className="text-muted-foreground text-xs">{body}</p>
       {result ? <Notice tone={result.ok ? "success" : "error"}>{result.message}</Notice> : null}
-      {channel === "telegram" && configured ? (
+      {configured ? (
         <a href="/settings/notifications" className="text-primary text-xs font-semibold underline">
           {connected ? "Connected · Manage" : "Connect Telegram"}
         </a>

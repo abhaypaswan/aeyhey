@@ -95,8 +95,8 @@ Running from source instead? See [CONTRIBUTING.md](CONTRIBUTING.md).
 - One card at a time, with progress. Leave halfway and pick up where you were.
 - Keyboard shortcuts for everything. Undo for 10 seconds after any action.
 - Daily, weekly or monthly, at a time you pick, with a card count you pick (1 to 30).
-- Web push (installable PWA), a Telegram bot, or email. Each card is its own Telegram message
-  with its own buttons, so you can handle them in any order.
+- Web push (installable PWA) or a Telegram bot. Each card is its own Telegram message with its
+  own buttons, so you can handle them in any order.
 - Stats: reviews per day, links cleared over time, score by tag, what is due for the next 30 days.
 
 **Self-hosting**
@@ -168,7 +168,7 @@ Everything is optional. Aeyhey runs with no `.env` at all.
 
 | Variable              | Default                 | What it does                                       |
 | --------------------- | ----------------------- | -------------------------------------------------- |
-| `PUBLIC_URL`          | `http://localhost:3000` | Used in push, Telegram and email links             |
+| `PUBLIC_URL`          | `http://localhost:3000` | Used in push and Telegram links                    |
 | `APP_SECRET`          | generated               | Signs cookies and tokens, encrypts stored API keys |
 | `DATABASE_URL`        | `file:/data/aeyhey.db`  | SQLite file, or a `postgres://` URL                |
 | `DATA_DIR`            | `/data`                 | Uploads, generated secrets, the SQLite file        |
@@ -176,7 +176,6 @@ Everything is optional. Aeyhey runs with no `.env` at all.
 | `AUTH_MODE`           | `password`              | `none` skips login, for a trusted LAN only         |
 | `AI_PROVIDER`         | unset                   | `openai`, `anthropic`, `ollama` or `mock`          |
 | `TELEGRAM_BOT_TOKEN`  | unset                   | Setting it turns Telegram on                       |
-| `SMTP_URL`            | unset                   | Setting it turns email on                          |
 | `FETCH_ALLOW_PRIVATE` | `false`                 | Lets Aeyhey fetch private network addresses        |
 
 The full list is in [.env.example](.env.example).
@@ -249,17 +248,6 @@ Send `/login` in Telegram to connect from the bot: Aeyhey opens the normal sign-
 then asks you to approve that chat. Settings shows the current connection and lets you disconnect
 it. Commands remain as optional shortcuts: `/today`, `/pause`, `/resume`, `/settings`.
 
-## Email setup
-
-1. Set `SMTP_URL` and `EMAIL_FROM` in your `.env`. Most providers give you a URL like
-   `smtp://user:pass@smtp.example.com:587`.
-2. Open Settings, Notifications, add your address, and click Send verification. Click the link in
-   the mail.
-3. Use Test to check it.
-
-One mail per session. Link cards have one-tap Read now, Later and Drop buttons that work without
-opening the app. Every mail has an unsubscribe link and a "pause for a week" link.
-
 ## Privacy
 
 Everything lives in your database. There is no telemetry, no analytics, and no phone-home check.
@@ -268,8 +256,8 @@ Aeyhey makes outbound calls in exactly four cases:
 
 1. **Fetching a link you saved.** To the site you saved, when the worker processes it.
 2. **Your AI provider.** Only if you configured one. With Ollama, this never leaves your machine.
-3. **Notification channels you turned on.** Telegram's API, or your own SMTP server, or the push
-   service your browser uses.
+3. **Notification channels you turned on.** Telegram's API, or the push service your browser
+   uses.
 4. **Nothing else.**
 
 A few more things worth knowing:
@@ -296,15 +284,15 @@ credits and managed API keys, and nothing else. Use it at [aeyhey.app](https://a
 
 ## How it compares
 
-|                                    | Aeyhey | Anki   | RemNote  | Readwise            | Karakeep / Linkwarden | Final Round AI |
-| ---------------------------------- | ------ | ------ | -------- | ------------------- | --------------------- | -------------- |
-| Self-hosted                        | yes    | yes    | no       | no                  | yes                   | no             |
-| Brings back unread links           | yes    | no     | no       | partly (highlights) | no                    | no             |
-| Questions from your resume         | yes    | no     | no       | no                  | no                    | partly         |
-| AI grades your written answer      | yes    | no     | no       | no                  | no                    | yes (live)     |
-| FSRS scheduling                    | yes    | yes    | yes      | no                  | no                    | no             |
-| Push, Telegram and email reminders | yes    | partly | partly   | email               | no                    | no             |
-| Price                              | free   | free   | freemium | paid                | free                  | paid           |
+|                               | Aeyhey | Anki   | RemNote  | Readwise            | Karakeep / Linkwarden | Final Round AI |
+| ----------------------------- | ------ | ------ | -------- | ------------------- | --------------------- | -------------- |
+| Self-hosted                   | yes    | yes    | no       | no                  | yes                   | no             |
+| Brings back unread links      | yes    | no     | no       | partly (highlights) | no                    | no             |
+| Questions from your resume    | yes    | no     | no       | no                  | no                    | partly         |
+| AI grades your written answer | yes    | no     | no       | no                  | no                    | yes (live)     |
+| FSRS scheduling               | yes    | yes    | yes      | no                  | no                    | no             |
+| Push and Telegram reminders   | yes    | partly | partly   | email               | no                    | no             |
+| Price                         | free   | free   | freemium | paid                | free                  | paid           |
 
 Different tools, different jobs. Anki is a better flashcard app, Karakeep is a better archive.
 Aeyhey is the only one that puts an unread link and a question about your own resume on the same
@@ -312,7 +300,7 @@ scheduler.
 
 ## Roadmap
 
-Shipped in v1: links, questions, sessions, FSRS, push, Telegram, email, Docker, demo mode.
+Shipped in v1: links, questions, sessions, FSRS, push, Telegram, Docker, demo mode.
 
 Next, roughly in order:
 

@@ -116,7 +116,6 @@ import {
   redirectAllowed,
   revokeApiToken,
 } from "../extensions/api-tokens";
-import { requestEmailVerification } from "../notify/email/index";
 import { createLinkCode } from "../notify/telegram/index";
 import { testConnection } from "../ai/providers";
 import { encryptSecret } from "../security/crypto";
@@ -976,28 +975,6 @@ export function createApi(deps: ApiDeps) {
       });
     }),
 
-    requestEmailVerify: route(
-      { ...base, schema: schemas.EmailVerifyRequestSchema },
-      async (ctx) => {
-        if (!env.SMTP_URL) {
-          return fail(400, "not_configured", "Set SMTP_URL and restart to turn email on.");
-        }
-
-        await requestEmailVerification(
-          {
-            handle,
-            smtpUrl: env.SMTP_URL,
-            from: env.EMAIL_FROM,
-            publicUrl: env.PUBLIC_URL,
-            appSecret: deps.appSecret,
-          },
-          ctx.user.id,
-          ctx.body.address,
-        );
-
-        return json({ ok: true });
-      },
-    ),
 
     testChannel: route({ ...base, schema: schemas.TestChannelSchema }, async (ctx) => {
       const built = await buildChannels({
@@ -1018,7 +995,9 @@ export function createApi(deps: ApiDeps) {
       }
 
       const result = await channel.sendTest(ctx.user.id);
-      return json(result, { status: result.ok ? 200 : 400 });
+      // A failed send says why, in the usual error shape, so the screen can show it.
+      if (!result.ok) return fail(400, "send_failed", result.error ?? "That did not send.");
+      return json(result);
     }),
 
     // ---------------------------------------------------------------- ops

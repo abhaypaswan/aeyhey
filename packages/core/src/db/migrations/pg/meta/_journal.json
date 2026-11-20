@@ -78,6 +78,13 @@
       "when": 1795033941665,
       "tag": "0010_auth_code_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795209431213,
+      "tag": "0011_drop_email_channel",
+      "breakpoints": true
     }
   ]
 }

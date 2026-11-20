@@ -66,7 +66,7 @@ POST /api/v1/devices
 `pushEnabled` in the answer says whether this instance can actually send to phones. That
 needs a plugin that provides a `NativePushSender` (see `@aeyhey/core/extensions`), because
 sending goes through the app publisher's own Firebase or APNs account. The community build
-has none, so reminders there go by web push, Telegram or email.
+has none, so reminders there go by web push or Telegram.
 
 On sign out, call `DELETE /api/v1/devices` with the same `pushToken`. Revoking a token also
 removes the devices that signed in with it.

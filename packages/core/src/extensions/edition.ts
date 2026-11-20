@@ -18,8 +18,6 @@ export interface FeatureFlags {
   ollama: boolean;
   /** A credits balance gates AI calls. Community: false. */
   credits: boolean;
-  /** Users may point Aeyhey at their own SMTP server. Community: true. */
-  customSmtp: boolean;
   /** Users may bring their own Telegram bot token. Community: true. */
   customTelegramBot: boolean;
   /** Seed data and the mock AI provider. Comes from DEMO_MODE. */
@@ -43,7 +41,6 @@ export const COMMUNITY_FLAGS: Readonly<FeatureFlags> = Object.freeze({
   byoKeys: true,
   ollama: true,
   credits: false,
-  customSmtp: true,
   customTelegramBot: true,
   demoMode: false,
 });
@@ -54,7 +51,6 @@ export const HOSTED_FLAGS: Readonly<FeatureFlags> = Object.freeze({
   byoKeys: true,
   ollama: false,
   credits: true,
-  customSmtp: false,
   customTelegramBot: false,
   demoMode: false,
 });

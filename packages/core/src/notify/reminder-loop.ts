@@ -8,7 +8,7 @@
 //
 // Two decisions worth knowing about:
 //
-//   1. The session is built once, not once per channel. Otherwise push, Telegram and email
+//   1. The session is built once, not once per channel. Otherwise push and Telegram
 //      could each build a different set of cards and the user would see three different
 //      "5 cards" that disagree.
 //   2. Zero cards means nothing is sent. A reminder that says "nothing to do" is the fastest

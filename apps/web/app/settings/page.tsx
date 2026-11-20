@@ -43,7 +43,6 @@ export default async function SettingsPage({
       channels={{
         telegramConfigured: Boolean(environment.TELEGRAM_BOT_TOKEN),
         telegramConnected: Boolean(telegramConnection),
-        emailConfigured: Boolean(environment.SMTP_URL),
       }}
     />
   );

@@ -4,7 +4,7 @@
 //
 // The bug this guards against: send_reminder read process.env.APP_SECRET, which is empty
 // when the secret was generated on first run and saved to DATA_DIR/secrets.json. Retried
-// emails then carried links signed with an empty key, and every one of them failed.
+// reminders then carried links signed with an empty key, and every one of them failed.
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -83,7 +83,7 @@ describe("send_reminder", () => {
     await enqueue(db.handle, {
       type: "send_reminder",
       userId: owner.id,
-      payload: { sessionId: session.session!.id, channel: "email" },
+      payload: { sessionId: session.session!.id, channel: "telegram" },
     });
 
     const registry = buildRegistry({

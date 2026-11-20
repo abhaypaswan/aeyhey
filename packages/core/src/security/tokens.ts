@@ -1,18 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Signed tokens: session cookies, email one-tap actions, email verification and unsubscribe,
-// and the Telegram webhook secret (PRD 14.4, 17).
-//
-// One-tap action tokens are HMAC-signed, stored hashed, single use and expire after 7 days.
-// The hash is what goes in the database, so a database dump cannot be replayed.
+// Signed tokens: session cookies, Telegram sign-in and link codes, and the Telegram webhook
+// secret (PRD 17). Where a token is stored, only its hash is, so a database dump cannot be
+// replayed.
 
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import { constantTimeEqual, deriveKey } from "./crypto";
 
 export type TokenPurpose =
   | "session"
-  | "email-action"
-  | "email-verify"
-  | "email-unsubscribe"
   | "telegram-webhook"
   | "telegram-login"
   | "link-code";
@@ -77,12 +72,11 @@ export function verifyToken<T extends Record<string, unknown>>(input: {
   return { ok: true, payload: payload as T };
 }
 
-/** What goes in the action_tokens table. The raw token only ever exists in the email. */
+/** What gets stored instead of a token, so the raw token only exists where it was sent. */
 export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 export const TEN_MINUTES_MS = 10 * 60 * 1000;
 export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 

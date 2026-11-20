@@ -155,7 +155,7 @@ export async function pauseIndefinitely(scope: Scope): Promise<void> {
   await updateSettings(scope, { pausedUntil: PAUSED_INDEFINITELY });
 }
 
-/** "/pause" in Telegram and the email footer both land here (PRD 12.2). */
+/** "/pause" in Telegram lands here (PRD 12.2). */
 export async function pauseFor(scope: Scope, days: number): Promise<Date> {
   const until = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   await updateSettings(scope, { pausedUntil: until });

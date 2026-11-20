@@ -6,7 +6,6 @@ import { describe, expect, it } from "vitest";
 import { inTopUpWindow, planTopUp, topUpKey, TOP_UP_LEAD_MS } from "../../src/questions/top-up";
 import { buildGenerateQuestionsPrompt } from "../../src/ai/prompts/generate-questions";
 import { newQuestionsLine, summarizeForNotification } from "../../src/notify/types";
-import { sessionEmailHeading } from "../../src/notify/email/templates";
 import { renderSessionHeader } from "../../src/notify/telegram/format";
 import type { CardView } from "../../src/sessions/views";
 
@@ -185,9 +184,7 @@ describe("reminder copy for new questions", () => {
     ).toBe("3 of them new questions");
   });
 
-  it("is in the email heading and the Telegram header", () => {
-    expect(sessionEmailHeading(five)).toBe("5 cards for you, 3 of them new questions on Physics");
-    expect(sessionEmailHeading([link])).toBe("1 card for you");
+  it("is in the Telegram header", () => {
     expect(renderSessionHeader(5, "Tomorrow at 09:00", newQuestionsLine(five))).toContain(
       "<b>5 cards for today</b>, 3 of them new questions on Physics",
     );

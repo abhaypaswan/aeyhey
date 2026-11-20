@@ -46,7 +46,7 @@ packages/core/          @aeyhey/core, all the feature code
   src/links/            normalize, extract urls, fetch and extract, AI enrichment, imports
   src/questions/        resume parsing, profile, generation, grading, dedupe
   src/ai/               providers, rate limiter, prompts, Zod contracts, mock provider
-  src/notify/           web push, Telegram, email, the reminder loop
+  src/notify/           web push, Telegram, the reminder loop
   src/jobs/             the DB-backed queue, the worker and its handlers
   src/extensions/       edition flags, auth, AI credentials, usage gate and sink, plugins
   src/security/         SSRF guard, encryption, signed tokens, log redaction

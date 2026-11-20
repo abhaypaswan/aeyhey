@@ -14,7 +14,7 @@ export interface DeliveryPayload {
   items: CardView[];
   /** "Tuesday at 09:00". */
   nextSessionLabel: string;
-  /** Absolute, because a link in an email has to work from anywhere. */
+  /** Absolute, because a link in a notification has to work from anywhere. */
   publicUrl: string;
   /** Mentioned in the session summary line when any expired (PRD 9.4 rule 5). */
   expiredSinceLast: number;
@@ -72,7 +72,7 @@ function sentence(text: string): string {
   return `${text[0]!.toUpperCase()}${text.slice(1)}.`;
 }
 
-/** Shared copy, so push, Telegram and email say the same thing (PRD 12.2). */
+/** Shared copy, so push and Telegram say the same thing (PRD 12.2). */
 export function summarizeForNotification(items: CardView[]): {
   title: string;
   body: string;

@@ -87,13 +87,12 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "notification",
       "notifications",
       "notify",
-      "email",
       "telegram",
       "push",
       "pause",
     ],
     answer:
-      "Aeyhey reminds you when a session is ready, at the time you choose, by browser or phone notification, email or Telegram. Change the time, how many cards a session has, or pause reminders from the menu behind your picture, or in Settings.",
+      "Aeyhey reminds you when a session is ready, at the time you choose, by browser or phone notification or Telegram. Change the time, how many cards a session has, or pause reminders from the menu behind your picture, or in Settings.",
   },
   {
     id: "streak",

@@ -215,12 +215,8 @@ export const PushSubscribeSchema = z.object({
   userAgent: z.string().max(300).optional(),
 });
 
-export const EmailVerifyRequestSchema = z.object({
-  address: z.string().email("That does not look like an email address."),
-});
-
 export const TestChannelSchema = z.object({
-  channel: z.enum(["push", "telegram", "email"]),
+  channel: z.enum(["push", "telegram"]),
 });
 
 /** A typed confirmation, so a stray request cannot remove an account. */

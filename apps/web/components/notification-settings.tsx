@@ -4,35 +4,17 @@
 
 import { useEffect, useState } from "react";
 import { apiClient, ApiRequestError } from "../lib/client";
-import { Button, Card, Field, Input, Notice, Page, PageHeader } from "./ui";
-
-/**
- * The browser wants the VAPID key as bytes, not base64url. The explicit ArrayBuffer is
- * needed because Uint8Array's buffer type is ArrayBufferLike, which includes
- * SharedArrayBuffer, and applicationServerKey will not accept that.
- */
-function urlBase64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
-  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
-  const normalized = padded.replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(normalized);
-
-  const bytes = new Uint8Array(new ArrayBuffer(raw.length));
-  for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i);
-  return bytes;
-}
+import { enableWebPush } from "../lib/web-push";
+import { Button, Card, Notice, Page, PageHeader } from "./ui";
 
 export function NotificationSettings({
   telegramConfigured,
   telegramConnected,
   telegramUsername,
-  emailConfigured,
-  verified,
 }: {
   telegramConfigured: boolean;
   telegramConnected: boolean;
   telegramUsername: string | null;
-  emailConfigured: boolean;
-  verified: string | null;
 }) {
   const [pushState, setPushState] = useState<string | null>(null);
   const [telegram, setTelegram] = useState<{
@@ -44,7 +26,6 @@ export function NotificationSettings({
     connected: telegramConnected,
     username: telegramUsername,
   });
-  const [emailAddress, setEmailAddress] = useState("");
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -73,55 +54,11 @@ export function NotificationSettings({
   async function enablePush(): Promise<void> {
     setBusy(true);
     setPushState(null);
-
     try {
-      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-        setPushState(
-          "This browser does not support web push. On iPhone, add Aeyhey to your home screen first.",
-        );
-        return;
-      }
-
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        setPushState(
-          "Notifications are blocked for this site. Allow them in your browser settings.",
-        );
-        return;
-      }
-
-      const { publicKey } = await apiClient.get<{ publicKey: string | null }>(
-        "/api/push/vapid-public-key",
-      );
-      if (!publicKey) {
-        setPushState("Push is not set up on this instance.");
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToBytes(publicKey),
-      });
-
-      const json = subscription.toJSON() as {
-        endpoint?: string;
-        keys?: { p256dh?: string; auth?: string };
-      };
-
-      await apiClient.post("/api/push/subscribe", {
-        endpoint: json.endpoint,
-        keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth },
-        userAgent: navigator.userAgent.slice(0, 300),
-      });
-
+      await enableWebPush();
       setPushState("This device will get reminders. Use Test to check it.");
     } catch (error) {
-      setPushState(
-        error instanceof ApiRequestError ? error.message : "Could not turn push on here.",
-      );
+      setPushState(error instanceof Error ? error.message : "Could not turn push on here.");
     } finally {
       setBusy(false);
     }
@@ -163,22 +100,6 @@ export function NotificationSettings({
     }
   }
 
-  async function verifyEmail(): Promise<void> {
-    setBusy(true);
-    setMessage(null);
-    try {
-      await apiClient.post("/api/email/verify-request", { address: emailAddress.trim() });
-      setMessage({ ok: true, text: "Check your inbox and click the link to confirm." });
-    } catch (error) {
-      setMessage({
-        ok: false,
-        text: error instanceof ApiRequestError ? error.message : "Could not send that.",
-      });
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function test(channel: string): Promise<void> {
     setBusy(true);
     setMessage(null);
@@ -203,10 +124,6 @@ export function NotificationSettings({
         subtitle="Where Aeyhey tells you a session is ready. Pick the ones you actually look at."
       />
 
-      {verified === "1" ? <Notice tone="success">Your email is confirmed.</Notice> : null}
-      {verified === "0" ? (
-        <Notice tone="error">That confirmation link did not work. Send a new one.</Notice>
-      ) : null}
       {message ? <Notice tone={message.ok ? "success" : "error"}>{message.text}</Notice> : null}
 
       <Card className="flex flex-col gap-3">
@@ -279,42 +196,6 @@ export function NotificationSettings({
           <p className="text-muted-foreground text-sm">
             Message @BotFather on Telegram, send /newbot, then put the token in your environment as{" "}
             <code className="font-mono text-xs">TELEGRAM_BOT_TOKEN</code> and restart.
-          </p>
-        )}
-      </Card>
-
-      <Card className="flex flex-col gap-3">
-        <h2 className="font-semibold">Email</h2>
-        {emailConfigured ? (
-          <>
-            <p className="text-muted-foreground text-sm">
-              One mail per session. Link cards have Read now, Later and Drop buttons that work
-              without opening the app.
-            </p>
-            <Field label="Where to send it" hint="You have to confirm the address first.">
-              <Input
-                type="email"
-                value={emailAddress}
-                onChange={(event) => setEmailAddress(event.target.value)}
-              />
-            </Field>
-            <div className="flex gap-2">
-              <Button
-                tone="primary"
-                disabled={busy || !emailAddress.includes("@")}
-                onClick={verifyEmail}
-              >
-                Send confirmation
-              </Button>
-              <Button disabled={busy} onClick={() => test("email")}>
-                Test
-              </Button>
-            </div>
-          </>
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            Set <code className="font-mono text-xs">SMTP_URL</code> in your environment and restart
-            to turn this on.
           </p>
         )}
       </Card>

@@ -22,7 +22,7 @@ export interface ManifestEntry {
   tag: string;
   /**
    * "user": a session cookie or an app token. "none": anyone. "special": its own proof,
-   * such as a signed link in an email or the Telegram webhook secret.
+   * such as a signed link or the Telegram webhook secret.
    */
   auth: "user" | "none" | "special";
   body?: ZodType;
@@ -768,46 +768,6 @@ export const API_MANIFEST: readonly ManifestEntry[] = [
     summary: "Approve a Telegram chat connection.",
     tag: "notifications",
     auth: "user",
-    internal: true,
-  },
-  {
-    method: "POST",
-    path: "/email/verify-request",
-    summary: "Send a verification email.",
-    tag: "notifications",
-    auth: "user",
-    body: schemas.EmailVerifyRequestSchema,
-  },
-  {
-    method: "GET",
-    path: "/email/verify",
-    summary: "The link in the verification email.",
-    tag: "notifications",
-    auth: "special",
-    internal: true,
-  },
-  {
-    method: "GET",
-    path: "/email/pause",
-    summary: "The pause link in a reminder email.",
-    tag: "notifications",
-    auth: "special",
-    internal: true,
-  },
-  {
-    method: "GET",
-    path: "/email/unsubscribe",
-    summary: "The unsubscribe link in a reminder email.",
-    tag: "notifications",
-    auth: "special",
-    internal: true,
-  },
-  {
-    method: "POST",
-    path: "/email/unsubscribe",
-    summary: "One-click unsubscribe (RFC 8058), sent by mail clients.",
-    tag: "notifications",
-    auth: "special",
     internal: true,
   },
   {

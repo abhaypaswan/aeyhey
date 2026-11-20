@@ -668,21 +668,6 @@ export const telegramMessages = sqliteTable(
   }),
 );
 
-export const emailChannels = sqliteTable(
-  "email_channels",
-  {
-    userId: text("user_id").primaryKey(),
-    address: text("address").notNull(),
-    verifiedAt: ts("verified_at"),
-    verifyTokenHash: text("verify_token_hash"),
-    unsubscribeTokenHash: text("unsubscribe_token_hash"),
-    createdAt: nowDefault(),
-  },
-  (t) => ({
-    addressIdx: index("email_channels_address_idx").on(t.address),
-  }),
-);
-
 export const notifications = sqliteTable(
   "notifications",
   {
@@ -700,23 +685,6 @@ export const notifications = sqliteTable(
   (t) => ({
     slotIdx: uniqueIndex("notifications_slot_idx").on(t.userId, t.channel, t.slotTime),
     statusIdx: index("notifications_status_idx").on(t.status),
-  }),
-);
-
-export const actionTokens = sqliteTable(
-  "action_tokens",
-  {
-    tokenHash: text("token_hash").primaryKey(),
-    userId: userId(),
-    cardId: text("card_id").notNull(),
-    action: text("action").$type<ReviewAction>().notNull(),
-    expiresAt: ts("expires_at").notNull(),
-    usedAt: ts("used_at"),
-    createdAt: nowDefault(),
-  },
-  (t) => ({
-    userIdx: index("action_tokens_user_idx").on(t.userId),
-    expiryIdx: index("action_tokens_expiry_idx").on(t.expiresAt),
   }),
 );
 

@@ -12,11 +12,6 @@ import {
   renderSessionHeader,
 } from "../../src/notify/telegram/format";
 import { resolveTelegramMode } from "../../src/notify/telegram/index";
-import {
-  renderSessionEmailHtml,
-  renderSessionEmailText,
-  renderVerifyEmail,
-} from "../../src/notify/email/templates";
 import { summarizeForNotification } from "../../src/notify/types";
 import type { CardView } from "../../src/sessions/views";
 
@@ -171,94 +166,6 @@ describe("telegram transport choice", () => {
     expect(resolveTelegramMode({ mode: "webhook", publicUrl: "http://localhost:3000" })).toBe(
       "webhook",
     );
-  });
-});
-
-describe("email templates", () => {
-  const input = {
-    displayName: "Jane",
-    items: [linkCard, questionCard],
-    publicUrl: "https://aeyhey.example.com",
-    nextSessionLabel: "Tuesday at 09:00",
-    tokens: {
-      read: { [linkCard.cardId]: "read-token" },
-      later: { [linkCard.cardId]: "later-token" },
-      drop: { [linkCard.cardId]: "drop-token" },
-    },
-    unsubscribeToken: "unsub-token",
-    pauseToken: "pause-token",
-    expiredSinceLast: 3,
-  };
-
-  it("gives link cards one-tap actions that work without the app", () => {
-    const html = renderSessionEmailHtml(input);
-    expect(html).toContain("https://aeyhey.example.com/e/read-token");
-    expect(html).toContain("https://aeyhey.example.com/e/later-token");
-    expect(html).toContain("https://aeyhey.example.com/e/drop-token");
-  });
-
-  it("sends a question card into the app, because answering needs a text box", () => {
-    const html = renderSessionEmailHtml(input);
-    expect(html).toContain(`/session?card=${questionCard.cardId}`);
-    // The model answer must not be in the email, or the question answers itself.
-    expect(html).not.toContain("idempotency key");
-  });
-
-  it("always has an unsubscribe and a pause link", () => {
-    const html = renderSessionEmailHtml(input);
-    expect(html).toContain("/api/email/unsubscribe?token=unsub-token");
-    expect(html).toContain("/api/email/pause?token=pause-token");
-    expect(html).toContain("/api/email/pause?token=pause-token&amp;for=forever");
-    expect(renderSessionEmailText(input)).toContain(
-      "/api/email/pause?token=pause-token&for=forever",
-    );
-  });
-
-  it("mentions expired links with somewhere to go", () => {
-    const html = renderSessionEmailHtml(input);
-    expect(html).toContain("3 links expired since last time");
-    expect(html).toContain("/inbox?status=expired");
-
-    const none = renderSessionEmailHtml({ ...input, expiredSinceLast: 0 });
-    expect(none).not.toContain("expired since last time");
-  });
-
-  it("escapes HTML from a page title, so it renders as text and cannot execute", () => {
-    const html = renderSessionEmailHtml({
-      ...input,
-      items: [{ ...linkCard, title: '<img src=x onerror="alert(1)">' } as CardView],
-    });
-
-    // What matters is that no tag survives. The characters of "onerror" are still in the
-    // document as inert text, which is correct: it is the angle brackets and the quotes
-    // that would make it an attribute, and both are escaped.
-    expect(html).not.toContain("<img");
-    expect(html).toContain("&lt;img");
-    expect(html).toContain("onerror=&quot;");
-  });
-
-  it("writes a plain text part with the same actions", () => {
-    const text = renderSessionEmailText(input);
-    expect(text).toContain("Choosing a Postgres index");
-    expect(text).toContain("Read now: https://aeyhey.example.com/e/read-token");
-    expect(text).toContain("Unsubscribe:");
-    // No markup leaks into the text part.
-    expect(text).not.toContain("<div");
-    expect(text).not.toContain("style=");
-  });
-
-  it("writes a verification email with one clear action", () => {
-    const mail = renderVerifyEmail({ publicUrl: "https://aeyhey.example.com", token: "verify-me" });
-    expect(mail.subject).toMatch(/confirm/i);
-    expect(mail.html).toContain("/api/email/verify?token=verify-me");
-    expect(mail.text).toContain("/api/email/verify?token=verify-me");
-  });
-
-  it("uses no em dashes anywhere, per the project style", () => {
-    const dashes = new RegExp("[\\u2013\\u2014]");
-    expect(renderSessionEmailHtml(input)).not.toMatch(dashes);
-    expect(renderSessionEmailText(input)).not.toMatch(dashes);
-    expect(renderVerifyEmail({ publicUrl: "x", token: "y" }).html).not.toMatch(dashes);
   });
 });
 

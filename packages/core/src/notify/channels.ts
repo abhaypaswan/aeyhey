@@ -2,13 +2,12 @@
 // Builds the channel list from the environment, once per process.
 //
 // A channel the operator has not configured is simply absent, which is why the reminder
-// loop never has to ask "is email set up" and the Settings screen can say "add SMTP_URL
-// to turn this on".
+// loop never has to ask "is Telegram set up" and the Settings screen can say "add
+// TELEGRAM_BOT_TOKEN to turn this on".
 
 import type { DbHandle } from "../db/client";
 import type { Env } from "../env";
 import { telegramWebhookSecret } from "../security/tokens";
-import { createEmailChannel } from "./email/index";
 import { createPushChannel, ensureVapidKeys, type VapidKeys } from "./push";
 import { createTelegramChannel } from "./telegram/index";
 import type { NotificationChannel } from "./types";
@@ -51,13 +50,6 @@ export async function buildChannels(input: {
       publicUrl: env.PUBLIC_URL,
       webhookSecret: telegramWebhookSecret(appSecret, env.TELEGRAM_WEBHOOK_SECRET),
       mode: env.TELEGRAM_MODE,
-    }),
-    createEmailChannel({
-      handle,
-      smtpUrl: env.SMTP_URL,
-      from: env.EMAIL_FROM,
-      publicUrl: env.PUBLIC_URL,
-      appSecret,
     }),
   ];
 

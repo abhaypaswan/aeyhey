@@ -71,7 +71,6 @@ describe("every extension point has a working community default", () => {
     // The things a self-hoster must keep.
     expect(registry.flag("byoKeys")).toBe(true);
     expect(registry.flag("ollama")).toBe(true);
-    expect(registry.flag("customSmtp")).toBe(true);
     expect(COMMUNITY_FLAGS.credits).toBe(false);
   });
 });

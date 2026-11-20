@@ -75,6 +75,8 @@ const EnvSchema = z.object({
   TELEGRAM_MODE: z.enum(["webhook", "polling", "auto"]).default("auto"),
   TELEGRAM_WEBHOOK_SECRET: trimmed,
 
+  // Core sends no email. Editions that sign people up by email (hosted) send their account
+  // mail through these.
   SMTP_URL: trimmed,
   EMAIL_FROM: z.string().default("Aeyhey <noreply@localhost>"),
 
@@ -147,7 +149,6 @@ export function lockedSettingKeys(e: Env = env()): string[] {
   if (e.AI_MODEL_GENERATE) locked.push("ai.models.generate");
   if (e.AI_MODEL_GRADE) locked.push("ai.models.grade");
   if (e.TELEGRAM_BOT_TOKEN) locked.push("channels.telegram.botToken");
-  if (e.SMTP_URL) locked.push("channels.email.smtp");
   if (e.DEMO_MODE) locked.push("ai.provider", "data.delete");
   return [...new Set(locked)];
 }
