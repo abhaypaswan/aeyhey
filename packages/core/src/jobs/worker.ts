@@ -40,6 +40,8 @@ import { queueTopUps } from "../questions/top-up";
 import { queueDigests } from "../agent/digest";
 import { enqueue } from "./queue";
 import { requeueStuckLinks } from "./requeue";
+import { giveUpOnLink } from "../repos/links";
+import { scopeFor } from "../repos/context";
 import { createLogger } from "../logger";
 
 const log = createLogger("worker");
@@ -235,7 +237,23 @@ export function createWorker(options: WorkerOptions): Worker {
         await failJob(handle, { ...job, attempts: job.maxAttempts }, error);
         return;
       }
-      await failJob(handle, job, error);
+      const { willRetry } = await failJob(handle, job, error);
+      if (!willRetry) await giveUpOnLinkJob(job);
+    }
+  }
+
+  /** A link whose read or summary job failed for good must not look in progress for ever. */
+  async function giveUpOnLinkJob(job: JobRecord): Promise<void> {
+    if (job.type !== "extract_link" && job.type !== "enrich_link") return;
+    const linkId = job.payload.linkId;
+    if (!job.userId || typeof linkId !== "string") return;
+    try {
+      await giveUpOnLink(scopeFor(handle, job.userId), linkId);
+    } catch (error) {
+      log.error("could not mark the link as failed", {
+        jobId: job.id,
+        error: (error as Error).message,
+      });
     }
   }
 

@@ -147,8 +147,9 @@ export default async function LinkPage({ params }: { params: Promise<{ id: strin
             </>
           ) : pending ? null : (
             <p className="text-muted-foreground mt-5 text-[15px]">
-              No summary for this one.
-              {link.aiStatus === "skipped" ? " There was nothing readable to summarise." : ""}
+              {link.extractedText
+                ? "No summary for this one."
+                : "Aeyhey could not open this page, so there is no summary. It may be private or need a sign-in. A note will remind you why you saved it."}
             </p>
           )}
 

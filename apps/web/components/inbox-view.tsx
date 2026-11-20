@@ -757,6 +757,10 @@ function ReadingPane({
         <p className="text-muted-foreground mt-4 text-sm">
           Still reading and summarising this one.
         </p>
+      ) : item.aiStatus === "skipped" && item.extractStatus !== "ok" ? (
+        <p className="text-muted-foreground mt-4 text-sm">
+          Aeyhey could not open this page. It may be private or need a sign-in.
+        </p>
       ) : null}
 
       {item.whySaved ? (

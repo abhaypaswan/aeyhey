@@ -434,6 +434,28 @@ export async function applyExtraction(
     .where(and(eq(links.userId, scope.userId), eq(links.id, linkId)));
 }
 
+/**
+ * The read or summary job for this link failed for good. Whatever is still pending is
+ * marked failed, so the app stops saying it is still reading the link, and the link
+ * keeps its title and goes on working like any other.
+ */
+export async function giveUpOnLink(scope: Scope, linkId: string): Promise<void> {
+  const { links } = scope.handle.schema;
+  const now = new Date();
+  await scope.handle.db
+    .update(links)
+    .set({ extractStatus: "failed", updatedAt: now })
+    .where(
+      and(eq(links.userId, scope.userId), eq(links.id, linkId), eq(links.extractStatus, "pending")),
+    );
+  await scope.handle.db
+    .update(links)
+    .set({ aiStatus: "failed", updatedAt: now })
+    .where(
+      and(eq(links.userId, scope.userId), eq(links.id, linkId), eq(links.aiStatus, "pending")),
+    );
+}
+
 /** Writes what the AI produced. Called by the enrich_link job. */
 export async function applyEnrichment(
   scope: Scope,

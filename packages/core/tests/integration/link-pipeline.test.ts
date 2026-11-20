@@ -224,7 +224,54 @@ describe("the pipeline, run by a real worker", () => {
     expect(listed.items[0]!.tags.length).toBeGreaterThan(0);
   });
 
-  it("keeps a link whose page could not be fetched, and still summarizes it", async () => {
+  it("stops showing a link as in progress once its summary job fails for good", async () => {
+    const scope = scopeFor(db.handle, userId);
+    const saved = await saveLinks(scope, { text: "https://example.com/postgres-index" });
+    const linkId = saved.created[0]!.id;
+    await applyExtraction(scope, linkId, {
+      status: "ok",
+      title: "Choosing a Postgres index",
+      contentType: "article",
+      text: "A b-tree index is the default in Postgres.",
+    });
+    await enqueue(db.handle, {
+      type: "enrich_link",
+      userId,
+      payload: { linkId },
+      maxAttempts: 1,
+    });
+
+    // A gate that breaks the way a database error would: not a block, a plain failure.
+    const allowAll = createAllowAllGate({ requestsPerMinute: 1000 });
+    const broken = buildRegistry({
+      defaults: {
+        auth: stubAuth,
+        aiKeys: mockKeys,
+        usageGate: {
+          ...allowAll,
+          async check() {
+            throw new Error("the rate limit table could not be written");
+          },
+        },
+        usageSink: createLocalUsageSink(db.handle),
+      },
+      env: { EDITION: "community", DEMO_MODE: true },
+    });
+    const worker = createWorker({
+      handle: db.handle,
+      env,
+      registry: broken,
+      maxPolls: 3,
+      pollIntervalMs: 1,
+    });
+    await worker.run();
+
+    const link = await findLinkById(scope, linkId);
+    expect(link!.aiStatus).toBe("failed");
+    expect(link!.extractStatus).not.toBe("pending");
+  });
+
+  it("keeps a link whose page could not be fetched, without guessing a summary", async () => {
     const scope = scopeFor(db.handle, userId);
     const saved = await saveLinks(scope, { text: "https://example.com/missing" });
     const linkId = saved.created[0]!.id;
@@ -247,11 +294,12 @@ describe("the pipeline, run by a real worker", () => {
     }
 
     const link = await findLinkById(scope, linkId);
-    // The page 404ed, so extraction failed, but the link and its card survive.
+    // The page 404ed, so extraction failed, but the link and its card survive. A title
+    // alone is too little to summarize, so no summary is made up from it.
     expect(link!.extractStatus).toBe("failed");
     expect(link!.title).toBe("Missing");
-    expect(link!.aiStatus).toBe("ok");
-    expect(link!.summaryConfidence).toBe("low");
+    expect(link!.aiStatus).toBe("skipped");
+    expect(link!.summaryLines).toBeNull();
 
     const card = await findCardForItem(scope, { type: "link", id: linkId });
     expect(card!.status).toBe("unread");

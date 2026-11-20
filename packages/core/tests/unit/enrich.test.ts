@@ -177,13 +177,27 @@ describe("enrichLink", () => {
     expect(result.tags).toContain("demos");
   });
 
-  it("forces confidence low when extraction only had the title", async () => {
+  it("does not guess a summary from the title of a page it could not read", async () => {
     const result = await enrichLink(deps(), {
       ...baseInput,
-      extracted: { status: "failed", title: "A page we could not fetch", contentType: "article" },
+      extracted: { status: "partial", title: "OpenAI Platform", contentType: "other" },
+    });
+    expect(result.aiStatus).toBe("skipped");
+    expect(result.summaryLines).toBeNull();
+    expect(result.note).toMatch(/private or need a sign-in/i);
+  });
+
+  it("forces confidence low when extraction was only partial", async () => {
+    const result = await enrichLink(deps(), {
+      ...baseInput,
+      extracted: {
+        status: "partial",
+        title: "A page we could half read",
+        text: "Only the first paragraph of the article came through.",
+        contentType: "article",
+      },
     });
     expect(result.summaryConfidence).toBe("low");
-    expect(result.note).toMatch(/title only/i);
   });
 
   it("skips cleanly when there was nothing readable at all", async () => {

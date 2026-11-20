@@ -5,6 +5,9 @@
 // "why you probably saved this" sentence, tags, a content type, read minutes and a
 // language.
 //
+// A page with no readable text is not summarized at all: a title alone is too little to
+// say anything true about it.
+//
 // The rule that shapes this module: a link is never lost to an AI failure. If the model
 // cannot produce valid output even after the one repair retry, the link gets
 // ai_status = failed and still appears in sessions with its title. The user saved it; our
@@ -78,15 +81,18 @@ export function withoutAi(input: {
 export async function enrichLink(deps: AiCallDeps, input: EnrichLinkInput): Promise<EnrichedLink> {
   const { extracted } = input;
 
-  // Nothing was readable and there is no title either, so there is nothing to summarize.
-  const titleOnly = extracted.status !== "ok" || !extracted.text;
-  if (titleOnly && !extracted.title && !extracted.text) {
+  // No text means the page could not be read: it is private, behind a sign-in, or gone.
+  // A title alone ("OpenAI Platform", "Sign in") says nothing about what the person
+  // saved, so a summary written from it would be a guess. Say so instead, and spend no
+  // credits on it.
+  if (!extracted.text) {
     return withoutAi({
       extracted,
-      reason: "There was nothing readable on that page to summarize.",
+      reason: "This page could not be read. It may be private or need a sign-in.",
       skipped: true,
     });
   }
+  const titleOnly = extracted.status !== "ok";
 
   const prompt = buildLinkSummaryPrompt({
     url: input.url,
