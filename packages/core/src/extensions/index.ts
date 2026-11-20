@@ -13,3 +13,9 @@ export * from "./plugin";
 export * from "./registry";
 export * from "./init";
 export * from "./defaults/index";
+export {
+  CONTRACT_TASK,
+  TASK_MAX_OUTPUT_TOKENS,
+  TOKEN_BUDGETS,
+  type ContractName,
+} from "../ai/contracts/index";

@@ -12,34 +12,17 @@
 
 import { NoObjectGeneratedError, type LanguageModel } from "ai";
 import type { z } from "zod";
-import { CONTRACTS, TOKEN_BUDGETS, type ContractName } from "./contracts/index";
+import { CONTRACTS, CONTRACT_TASK, TOKEN_BUDGETS, type ContractName } from "./contracts/index";
 import { resolveModel, explainProviderError } from "./providers";
 import { mockObjectFor, mockUsage } from "./mock";
 import type { AiLimiter } from "./limiter";
 import { estimateTokens, repairPrompt } from "./prompts/shared";
 import { AIBlockedError, type UsageGate, type UsageSink } from "../extensions/usage";
-import type { AIKeyProvider, AITask } from "../extensions/ai-credentials";
+import type { AIKeyProvider } from "../extensions/ai-credentials";
 import { newId } from "../ids";
 import { createLogger } from "../logger";
 
 const log = createLogger("ai");
-
-/** Which task each contract bills against, for credentials and metering. */
-const CONTRACT_TASK: Record<ContractName, AITask> = {
-  link_summary: "summary",
-  resume_profile: "profile",
-  generate_questions: "generate",
-  grade_answer: "grade",
-  // Reading a document to understand it, the same kind of work as reading a resume.
-  document_intent: "profile",
-  // Summing up a day of work is summary work, so it bills like a link summary.
-  agent_digest: "summary",
-  // Reading a message and answering from a few saved pieces: short, summary-sized work.
-  assistant_intent: "summary",
-  library_answer: "summary",
-  // A chat answer: one call per message, sized like a short summary.
-  assistant_turn: "summary",
-};
 
 export interface AiCallDeps {
   keys: AIKeyProvider;

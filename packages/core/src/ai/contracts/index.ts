@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { CONTENT_TYPES, DIFFICULTIES, QUESTION_CATEGORIES, VERDICTS } from "../../db/types";
+import type { AITask } from "../../extensions/ai-credentials";
 
 /**
  * Collapses whitespace and clamps to a length, rather than rejecting what is too long.
@@ -293,6 +294,19 @@ export const CONTRACTS = {
 
 export type ContractName = keyof typeof CONTRACTS;
 
+/** Which hosted billing task each contract uses. */
+export const CONTRACT_TASK: Record<ContractName, AITask> = {
+  link_summary: "summary",
+  resume_profile: "profile",
+  generate_questions: "generate",
+  grade_answer: "grade",
+  document_intent: "profile",
+  agent_digest: "summary",
+  assistant_intent: "summary",
+  library_answer: "summary",
+  assistant_turn: "summary",
+};
+
 /** Token budget per contract, used for the gate estimate and the max output size. */
 export const TOKEN_BUDGETS: Record<
   ContractName,
@@ -308,3 +322,12 @@ export const TOKEN_BUDGETS: Record<
   library_answer: { maxOutputTokens: 1_200, timeoutMs: 30_000, ollamaTimeoutMs: 90_000 },
   assistant_turn: { maxOutputTokens: 2_500, timeoutMs: 60_000, ollamaTimeoutMs: 180_000 },
 };
+
+/** Largest contract output for each billing task, used to reserve enough hosted credits. */
+export const TASK_MAX_OUTPUT_TOKENS: Record<AITask, number> = Object.fromEntries(
+  Object.entries(CONTRACT_TASK).reduce<Map<AITask, number>>((maximums, [contract, task]) => {
+    const tokens = TOKEN_BUDGETS[contract as ContractName].maxOutputTokens;
+    maximums.set(task, Math.max(maximums.get(task) ?? 0, tokens));
+    return maximums;
+  }, new Map<AITask, number>()),
+) as Record<AITask, number>;

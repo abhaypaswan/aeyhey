@@ -15,6 +15,9 @@ import {
   LINK_SUMMARY_SYSTEM,
   GENERATE_QUESTIONS_SYSTEM,
   isTriviallyEmpty,
+  CONTRACT_TASK,
+  TASK_MAX_OUTPUT_TOKENS,
+  TOKEN_BUDGETS,
   untrusted,
 } from "../../src/ai/index";
 import { AIBlockedError } from "../../src/extensions/usage";
@@ -88,6 +91,13 @@ describe("prompt safety", () => {
 });
 
 describe("contract schemas", () => {
+  it("reserves at least the maximum output for every contract in a task", () => {
+    for (const [contract, budget] of Object.entries(TOKEN_BUDGETS)) {
+      const task = CONTRACT_TASK[contract as keyof typeof CONTRACT_TASK];
+      expect(TASK_MAX_OUTPUT_TOKENS[task]).toBeGreaterThanOrEqual(budget.maxOutputTokens);
+    }
+  });
+
   it("requires exactly three summary lines", () => {
     const base = {
       why_saved: "You probably saved this to read later.",
