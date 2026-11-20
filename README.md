@@ -86,7 +86,7 @@ Running from source instead? See [CONTRIBUTING.md](CONTRIBUTING.md).
 - Type 1 to 10 topics, pick a level, get questions with model answers.
 - Or upload your resume (PDF, DOCX or pasted text), add a target role and a job description, and
   get questions about your own projects and stack plus the standard ones for that role.
-- Review and edit everything before it enters a deck. Near-duplicates get dropped automatically.
+- Generated questions are kept in the deck automatically. Near-duplicates get dropped.
 - Answer, Reveal, Skip, or rate Easy or Hard. Every action feeds the scheduler.
 - "Generate 5 more" on a deck, "more like this" on a single card.
 
@@ -104,7 +104,7 @@ Running from source instead? See [CONTRIBUTING.md](CONTRIBUTING.md).
 - One Docker image runs the web app or the worker. SQLite by default, one file to back up.
   Postgres when you want it.
 - Compose overrides for Ollama and Postgres. Migrations run on start.
-- JSON export of everything, and an import for it.
+- JSON export of everything. Restoring from that export is not available yet.
 
 ## Screenshots
 
@@ -179,7 +179,7 @@ Everything is optional. Aeyhey runs with no `.env` at all.
 | `SMTP_URL`            | unset                   | Setting it turns email on                          |
 | `FETCH_ALLOW_PRIVATE` | `false`                 | Lets Aeyhey fetch private network addresses        |
 
-The full list is in [.env.example](.env.example) and [docs/configuration.md](docs/configuration.md).
+The full list is in [.env.example](.env.example).
 Anything you set in the environment wins over the in-app settings, and the settings screen marks
 those fields as locked so you are not confused about why a change did nothing.
 
@@ -292,7 +292,7 @@ Everything in this repository is the real app, free under AGPL-3.0, with nothing
 crippled or time-limited. If you can run Docker, you get every feature that matters for learning.
 
 There is also a hosted version for people who would rather not run servers. It adds sign-up,
-credits and managed API keys, and nothing else. A link will go here when it launches.
+credits and managed API keys, and nothing else. Use it at [aeyhey.app](https://aeyhey.app).
 
 ## How it compares
 
@@ -334,6 +334,10 @@ pnpm dev          # the web app
 pnpm dev:worker   # jobs and reminders, in a second terminal
 pnpm test
 ```
+
+The current Vitest suite has 501 passing tests in the default run. Postgres coverage adds four
+query tests and activates one migration test, for 506 tests total when those suites use isolated
+throwaway databases through `CORE_TEST_DATABASE_URL`.
 
 [CONTRIBUTING.md](CONTRIBUTING.md) has the project layout, the two rules that keep the code honest,
 and the one-comment CLA step.
