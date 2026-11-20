@@ -240,6 +240,19 @@ describe("callAi with the mock provider", () => {
     expect(result.object.confidence).toBe("low");
   });
 
+  it("sends the readable part of a partly read page, and says what it is", () => {
+    const prompt = buildLinkSummaryPrompt({
+      url: "https://www.instagram.com/reel/abc/",
+      title: "On the budget",
+      text: "Instagram reel by Ada.\n\nCaption:\nOn the budget",
+      savedAt: new Date(),
+      partial: true,
+    });
+    expect(prompt).toContain("Caption:");
+    expect(prompt).toContain("Only part of this page could be read");
+    expect(prompt).not.toContain("could not be fetched. Work from");
+  });
+
   it("uses the user's note for why_saved when there is one", async () => {
     const { deps: d } = deps();
     const result = await callAi(d, {

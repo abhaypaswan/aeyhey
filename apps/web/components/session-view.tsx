@@ -685,7 +685,9 @@ function LinkCard({
           </p>
         )}
         {card.summaryConfidence === "low" ? (
-          <p className="text-muted-foreground mt-2 text-xs italic">Summary from the title only.</p>
+          <p className="text-muted-foreground mt-2 text-xs italic">
+            Summary from part of the page.
+          </p>
         ) : null}
 
         {card.note ? (

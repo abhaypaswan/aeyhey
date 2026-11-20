@@ -18,6 +18,11 @@ export interface LinkSummaryInput {
   savedAt: Date;
   /** True when extraction failed and only metadata is available. */
   titleOnly?: boolean;
+  /**
+   * True when only part of the page could be read: the caption of a video or photo, or a
+   * page's description. The text is still sent, with a word on what it is.
+   */
+  partial?: boolean;
 }
 
 export const LINK_SUMMARY_SYSTEM = joinPrompt(
@@ -58,9 +63,14 @@ export function buildLinkSummaryPrompt(input: LinkSummaryInput): string {
       ? `Their own note about why they saved it:\n${untrusted("note", input.userNote, 500)}`
       : null,
     tagList,
-    input.titleOnly
+    input.titleOnly || !input.text
       ? 'The page content could not be fetched. Work from the URL, the title and the metadata only, and set confidence to "low".'
-      : `Page content:\n${untrusted("page", input.text ?? "", MAX_PAGE_CHARS)}`,
+      : input.partial
+        ? [
+            'Only part of this page could be read: what follows may be the caption of a video or photo, or a short description of the page, not the whole thing. Summarize what this text says without claiming to know the rest, do not say it could not be fetched or call it a guess from the title, and set confidence to "low".',
+            `Readable part:\n${untrusted("page", input.text, MAX_PAGE_CHARS)}`,
+          ].join("\n")
+        : `Page content:\n${untrusted("page", input.text, MAX_PAGE_CHARS)}`,
     "Estimate read_minutes from the length of the content, at about 220 words a minute, and at least 1.",
   );
 }

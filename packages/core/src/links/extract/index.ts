@@ -24,8 +24,8 @@ export interface ExtractLinkInput {
 }
 
 /**
- * A last-resort result built from the URL alone. The AI can still write something from a
- * hostname and a path, labelled as a summary from the title only (PRD 8.1 FR-LINK-4).
+ * A last-resort result built from the URL alone. It has no text, so no summary is
+ * written from it; the card keeps the title guessed from the path (PRD 8.1 FR-LINK-4).
  */
 function fromUrlOnly(url: string, note: string): ExtractedContent {
   let title: string | null = null;

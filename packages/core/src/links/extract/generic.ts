@@ -177,7 +177,7 @@ export async function extractHtml(input: ExtractHtmlInput): Promise<ExtractedCon
     finalUrl: meta.canonicalUrl ?? baseUrl,
     ...(hasRealContent
       ? {}
-      : { note: "Only the page metadata was readable, so the summary is from the title." }),
+      : { note: "Only the page metadata was readable, so the summary is from its description." }),
   };
 }
 

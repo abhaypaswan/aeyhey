@@ -92,7 +92,8 @@ export async function enrichLink(deps: AiCallDeps, input: EnrichLinkInput): Prom
       skipped: true,
     });
   }
-  const titleOnly = extracted.status !== "ok";
+  // Text, but not the whole page: a caption, or a page's description.
+  const partial = extracted.status !== "ok";
 
   const prompt = buildLinkSummaryPrompt({
     url: input.url,
@@ -103,7 +104,7 @@ export async function enrichLink(deps: AiCallDeps, input: EnrichLinkInput): Prom
     userNote: input.userNote ?? null,
     existingTags: input.existingTags ?? [],
     savedAt: input.savedAt,
-    titleOnly,
+    partial,
   });
 
   try {
@@ -122,15 +123,15 @@ export async function enrichLink(deps: AiCallDeps, input: EnrichLinkInput): Prom
       aiStatus: "ok",
       summaryLines: summary.summary_lines,
       whySaved: summary.why_saved,
-      // The model is told to say low when it only had metadata, but extraction already
-      // knows the truth, so we do not take its word for it.
-      summaryConfidence: titleOnly ? "low" : summary.confidence,
+      // The model is told to say low when it only had part of the page, but extraction
+      // already knows the truth, so we do not take its word for it.
+      summaryConfidence: partial ? "low" : summary.confidence,
       tags: resolveTags(summary.tags, input.existingTags ?? []),
       // The model sees the content and we only saw the URL, so its answer wins here.
       contentType: summary.content_type,
       readMinutes: summary.read_minutes ?? estimateReadMinutes(extracted.text),
       language: summary.language ?? extracted.language ?? null,
-      ...(titleOnly ? { note: "Summary from the title only." } : {}),
+      ...(partial ? { note: "Summary from part of the page." } : {}),
     };
   } catch (error) {
     // A blocked call is not a failure. The job stays blocked and resumes when the gate
