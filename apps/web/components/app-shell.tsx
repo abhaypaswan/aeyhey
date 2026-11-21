@@ -11,6 +11,7 @@ import { repos, scheduler } from "@aeyhey/core";
 import { getRuntime } from "../runtime";
 import { pageState, pluginNav } from "../lib/server";
 import { ShellFrame } from "./nav";
+import { TimezoneGuess } from "./timezone-guess";
 
 export async function AppShell({ children }: { children: ReactNode }) {
   const state = await pageState();
@@ -47,6 +48,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
         extraNav: await pluginNav(),
       }}
     >
+      <TimezoneGuess userId={user.id} timezone={settings.timezone} />
       {children}
     </ShellFrame>
   );

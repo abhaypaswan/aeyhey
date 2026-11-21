@@ -26,6 +26,7 @@ export default async function SettingsPage({
 
   return (
     <SettingsView
+      userId={user.id}
       initial={{
         ...settings,
         pausedUntil: settings.pausedUntil ? settings.pausedUntil.toISOString() : null,

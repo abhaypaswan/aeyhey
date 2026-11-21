@@ -22,6 +22,7 @@ import { AppearanceSettings } from "./appearance-settings";
 import { SignedInApps } from "./signed-in-apps";
 import { NumberBox, SearchSelectField, SelectField, SliderBox, SwitchField, TimeBox } from "./form";
 import type { TimezoneOption } from "../lib/timezones";
+import { markTimezoneSettled } from "./timezone-guess";
 import { Toggle } from "@ui-sdk/react/toggle";
 import { ProfileSettings } from "./profile-settings";
 import { AgentSettings } from "./agent-settings";
@@ -164,7 +165,10 @@ export function SettingsView({
   initialTab,
   publicUrl,
   accountHref = null,
+  userId,
 }: {
+  /** Whose settings these are, so a saved timezone is never replaced by a guess. */
+  userId?: string;
   initial: Settings;
   /** From ?tab= in the address, so a link can open a tab such as profile. */
   initialTab?: string;
@@ -185,6 +189,11 @@ export function SettingsView({
     tabs.find((option) => option.id === initialTab)?.id ?? "schedule",
   );
   const [settings, setSettings] = useState(initial);
+  // The timezone guess can land after this page has loaded. Take it in, so the form
+  // shows it and a save does not put UTC back.
+  useEffect(() => {
+    setSettings((current) => ({ ...current, timezone: initial.timezone }));
+  }, [initial.timezone]);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -203,6 +212,7 @@ export function SettingsView({
     try {
       const { pausedUntil: _pausedUntil, ...patch } = settings;
       await apiClient.patch("/api/settings", patch);
+      if (userId) markTimezoneSettled(userId);
       setSaved(true);
     } catch (thrown) {
       setError(thrown instanceof ApiRequestError ? thrown.message : "Those did not save.");
