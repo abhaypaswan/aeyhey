@@ -89,6 +89,8 @@ type Message =
       options?: Option[];
       links?: { label: string; href: string }[];
       error?: boolean;
+      /** A deck held back for credits, which "Try again" runs now. Cleared once pressed. */
+      retry?: { jobId: string; sourceId: string; what: string; messageId: string };
     };
 
 const STORAGE_KEY = "aeyhey:assistant";
@@ -248,6 +250,8 @@ export function Assistant({
             status.status === "blocked"
               ? (status.blocked ?? "That needs credits to carry on.")
               : (status.error ?? "That did not finish. Try again in a moment."),
+          // Held for credits, the job is still there: after a top-up it can run now.
+          ...(status.status === "blocked" ? { retry: { jobId, sourceId, what, messageId } } : {}),
         });
         return;
       }
@@ -285,6 +289,26 @@ export function Assistant({
         await openDeckWhenWritten(messageId, result.jobId, result.sourceId, what);
       } catch (thrown) {
         update(messageId, { working: undefined, settled: false });
+        push({ id: newId(), role: "assistant", error: true, text: errorText(thrown) });
+      } finally {
+        setBusy(false);
+      }
+    },
+    [push, update, openDeckWhenWritten],
+  );
+
+  const retryDeck = useCallback(
+    async (
+      noticeId: string,
+      retry: NonNullable<Extract<Message, { role: "assistant" }>["retry"]>,
+    ) => {
+      setBusy(true);
+      update(noticeId, { retry: undefined });
+      try {
+        await apiClient.post(`/api/jobs/${retry.jobId}/retry`);
+        await openDeckWhenWritten(retry.messageId, retry.jobId, retry.sourceId, retry.what);
+      } catch (thrown) {
+        update(noticeId, { retry });
         push({ id: newId(), role: "assistant", error: true, text: errorText(thrown) });
       } finally {
         setBusy(false);
@@ -554,6 +578,7 @@ export function Assistant({
                 onProposalChange={(proposal) => update(message.id, { proposal })}
                 onMakeDeck={(proposal) => void makeDeck(message.id, proposal)}
                 onWriteDocument={(preview) => void writeFromDocument(message.id, preview)}
+                onRetry={(retry) => void retryDeck(message.id, retry)}
                 onReadAs={(purpose) => {
                   const doc = message.document;
                   if (!doc) return;
@@ -793,6 +818,7 @@ function AssistantMessage({
   onWriteDocument,
   onReadAs,
   onOption,
+  onRetry,
 }: {
   message: Extract<Message, { role: "assistant" }>;
   busy: boolean;
@@ -801,6 +827,7 @@ function AssistantMessage({
   onWriteDocument: (preview: DocumentPreview) => void;
   onReadAs: (purpose: "study" | "topics" | "resume") => void;
   onOption: (option: Option) => void;
+  onRetry: (retry: NonNullable<Extract<Message, { role: "assistant" }>["retry"]>) => void;
 }) {
   const proposal = message.proposal;
   const doc = message.document;
@@ -993,6 +1020,16 @@ function AssistantMessage({
           <span className="border-primary size-3.5 animate-spin rounded-full border-2 border-t-transparent" />
           {message.working}
         </p>
+      ) : null}
+
+      {message.retry ? (
+        <SdkButton
+          disabled={busy}
+          onClick={() => message.retry && onRetry(message.retry)}
+          className="session-primary min-h-9! px-4! text-sm! self-start"
+        >
+          Try again
+        </SdkButton>
       ) : null}
 
       {message.links?.length ? (

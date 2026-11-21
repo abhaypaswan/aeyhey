@@ -35,7 +35,8 @@ export interface ShellData {
   /** False when the app runs without sign-in (AUTH_MODE=none). */
   canSignOut: boolean;
   /** Links a plugin adds to the account menu, such as a hosted edition's Credits page. */
-  extraNav?: { href: string; label: string; icon?: string }[];
+  /** Links plugins add. detail is the grey line under the label, such as a balance. */
+  extraNav?: { href: string; label: string; icon?: string; detail?: string }[];
 }
 
 /** Icons a plugin may name for its links. Anything else gets no icon of its own. */

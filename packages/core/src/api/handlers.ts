@@ -85,7 +85,7 @@ import {
 import { describeNextSession, isPaused } from "../scheduler/cadence";
 import { findCardForItem, saveCardAfterAction, updateCardStatus } from "../repos/cards";
 import { applyLinkAction, snapshot } from "../scheduler/scheduler";
-import { enqueue, findJob } from "../jobs/queue";
+import { enqueue, findJob, resumeBlockedJob } from "../jobs/queue";
 import {
   parseDocumentFile,
   parseDocumentText,
@@ -975,7 +975,6 @@ export function createApi(deps: ApiDeps) {
       });
     }),
 
-
     testChannel: route({ ...base, schema: schemas.TestChannelSchema }, async (ctx) => {
       const built = await buildChannels({
         handle,
@@ -1019,6 +1018,20 @@ export function createApi(deps: ApiDeps) {
           // A blocked job is waiting on the user, not broken, so it reads differently.
           blocked: job.status === "blocked" ? job.lastError : null,
         });
+      }),
+
+    // Try again after a top-up: a job held for credits runs now rather than after its wait.
+    retryJob: (jobId: string) =>
+      route(base, async (ctx) => {
+        const job = await findJob(handle, jobId);
+        if (!job || (job.userId && job.userId !== ctx.user.id)) {
+          return fail(404, "not_found", "That job is not one of yours.");
+        }
+        if (job.status !== "blocked") {
+          return json({ id: job.id, status: job.status });
+        }
+        await resumeBlockedJob(handle, job.id);
+        return json({ id: job.id, status: "queued" });
       }),
 
     // The same bundle the stats page reads. Bucketing happens in JavaScript there, so it

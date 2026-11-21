@@ -22,6 +22,7 @@ import { newId } from "../ids";
 import { ensureAppSecret } from "../security/crypto";
 import {
   blockJob,
+  blockedTooLong,
   claimNextJob,
   completeJob,
   failJob,
@@ -229,6 +230,12 @@ export function createWorker(options: WorkerOptions): Worker {
       log.info("job done", { jobId: job.id, type: job.type });
     } catch (error) {
       if (error instanceof AIBlockedError) {
+        if (blockedTooLong(job)) {
+          // Waited days for credits: stop, rather than check again every 15 minutes.
+          await failJob(handle, { ...job, attempts: job.maxAttempts }, error);
+          await giveUpOnLinkJob(job);
+          return;
+        }
         await blockJob(handle, job, error.message);
         return;
       }

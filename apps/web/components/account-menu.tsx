@@ -110,7 +110,7 @@ export function AccountMenu({ data }: { data: ShellData }) {
     ...(data.extraNav ?? []).map((item) => ({
       href: item.href,
       label: item.label,
-      detail: "",
+      detail: item.detail ?? "",
       icon: PLUGIN_ICONS[item.icon ?? ""] ?? null,
     })),
     {

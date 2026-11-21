@@ -14,7 +14,15 @@ import { createAllowAllGate } from "../../src/extensions/defaults/allow-all-gate
 import { createOwner } from "../../src/extensions/defaults/local-auth";
 import { loadEnv, type Env } from "../../src/env";
 import { createWorker } from "../../src/jobs/worker";
-import { enqueue, claimNextJob, failJob, blockJob, findJob, backoffMs } from "../../src/jobs/queue";
+import {
+  enqueue,
+  claimNextJob,
+  failJob,
+  blockJob,
+  findJob,
+  backoffMs,
+  resumeBlockedJob,
+} from "../../src/jobs/queue";
 import {
   applyExtraction,
   findLinkById,
@@ -271,6 +279,66 @@ describe("the pipeline, run by a real worker", () => {
     expect(link!.extractStatus).not.toBe("pending");
   });
 
+  it("gives up on a job held for credits for more than three days", async () => {
+    const scope = scopeFor(db.handle, userId);
+    const saved = await saveLinks(scope, {
+      text: "https://example.com/old-wait https://example.com/new-wait",
+    });
+    const [oldLink, newLink] = saved.created.map((link) => link.id);
+    for (const linkId of [oldLink!, newLink!]) {
+      await applyExtraction(scope, linkId, {
+        status: "ok",
+        title: "Choosing a Postgres index",
+        contentType: "article",
+        text: "A b-tree index is the default in Postgres.",
+      });
+    }
+    const oldJob = await enqueue(db.handle, {
+      type: "enrich_link",
+      userId,
+      payload: { linkId: oldLink },
+    });
+    const newJob = await enqueue(db.handle, {
+      type: "enrich_link",
+      userId,
+      payload: { linkId: newLink },
+    });
+    const { jobs } = db.handle.schema;
+    await db.handle.db
+      .update(jobs)
+      .set({ createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000) })
+      .where(eq(jobs.id, oldJob));
+
+    const allowAll = createAllowAllGate({ requestsPerMinute: 1000 });
+    const broke = buildRegistry({
+      defaults: {
+        auth: stubAuth,
+        aiKeys: mockKeys,
+        usageGate: {
+          ...allowAll,
+          async check() {
+            return { allow: false, reason: "no_credits", message: "You are out of credits." };
+          },
+        },
+        usageSink: createLocalUsageSink(db.handle),
+      },
+      env: { EDITION: "community", DEMO_MODE: true },
+    });
+    const worker = createWorker({
+      handle: db.handle,
+      env,
+      registry: broke,
+      maxPolls: 4,
+      pollIntervalMs: 1,
+    });
+    await worker.run();
+
+    expect((await findJob(db.handle, oldJob))!.status).toBe("failed");
+    expect((await findLinkById(scope, oldLink!))!.aiStatus).toBe("failed");
+    // One queued just now still waits.
+    expect((await findJob(db.handle, newJob))!.status).toBe("blocked");
+  });
+
   it("keeps a link whose page could not be fetched, without guessing a summary", async () => {
     const scope = scopeFor(db.handle, userId);
     const saved = await saveLinks(scope, { text: "https://example.com/missing" });
@@ -497,6 +565,23 @@ describe("the job queue", () => {
 
     const again = await claimNextJob(db.handle, "w");
     expect(again?.id).toBe(jobId);
+  });
+
+  it("runs a blocked job now when asked to try again, and leaves other jobs alone", async () => {
+    const jobId = await enqueue(db.handle, {
+      type: "enrich_link",
+      userId,
+      payload: { linkId: "l1" },
+    });
+    const claimed = await claimNextJob(db.handle, "w");
+    await blockJob(db.handle, claimed!, "no credits");
+    // Its 15 minute wait is not over, so nothing would claim it yet.
+    expect(await claimNextJob(db.handle, "w")).toBeNull();
+
+    expect(await resumeBlockedJob(db.handle, jobId)).toBe(true);
+    expect((await claimNextJob(db.handle, "w"))?.id).toBe(jobId);
+    // Now running, not blocked: a second try again does nothing.
+    expect(await resumeBlockedJob(db.handle, jobId)).toBe(false);
   });
 
   it("fails a job type nothing handles, with a message that says why", async () => {

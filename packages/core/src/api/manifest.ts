@@ -366,6 +366,13 @@ export const API_MANIFEST: readonly ManifestEntry[] = [
     tag: "questions",
     auth: "user",
   },
+  {
+    method: "POST",
+    path: "/jobs/{id}/retry",
+    summary: "Run a job held back for credits now, after a top-up, instead of after its wait.",
+    tag: "questions",
+    auth: "user",
+  },
 
   // ------------------------------------------------------------ public page (PRD 28)
   {

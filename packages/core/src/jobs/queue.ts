@@ -31,6 +31,8 @@ export interface JobRecord {
   lastError: string | null;
   progressDone: number;
   progressTotal: number | null;
+  /** When it was queued. A job held for credits gives up once it is this old plus a while. */
+  createdAt?: Date;
 }
 
 export interface EnqueueInput {
@@ -237,6 +239,7 @@ export async function claimNextJob(
     lastError: row.lastError,
     progressDone: row.progressDone,
     progressTotal: row.progressTotal,
+    createdAt: row.createdAt,
   };
 }
 
@@ -253,6 +256,7 @@ function mapPgRow(row: Record<string, unknown>): JobRecord {
     lastError: (row["last_error"] as string | null) ?? null,
     progressDone: Number(row["progress_done"] ?? 0),
     progressTotal: (row["progress_total"] as number | null) ?? null,
+    createdAt: new Date(row["created_at"] as string),
   };
 }
 
@@ -300,6 +304,20 @@ export async function failJob(
  * The usage gate refused this one. It is not a failure: the attempt is given back and the
  * job waits, so a top-up resumes everything without a manual re-queue (PRD 23.4).
  */
+/**
+ * How long a job may wait for credits. Past this it fails for good, so the queue does not
+ * keep checking a job for someone who never tops up. Try again, or asking again, starts
+ * a new one.
+ */
+export const BLOCKED_GIVE_UP_MS = 3 * 24 * 60 * 60 * 1000;
+
+/** Whether a job the usage gate just refused has waited long enough to stop. */
+export function blockedTooLong(job: JobRecord, now = new Date()): boolean {
+  return (
+    job.createdAt !== undefined && now.getTime() - job.createdAt.getTime() > BLOCKED_GIVE_UP_MS
+  );
+}
+
 export async function blockJob(
   handle: DbHandle,
   job: JobRecord,
@@ -324,6 +342,25 @@ export async function blockJob(
     .where(eq(jobs.id, job.id));
 
   log.info("job blocked by the usage gate", { jobId: job.id, type: job.type, reason });
+}
+
+/**
+ * Runs a job the usage gate held back on the next tick instead of after its wait, for
+ * when the person has just topped up and asks to try again. Only a blocked job moves;
+ * anything else is left alone. Returns whether it moved.
+ */
+export async function resumeBlockedJob(
+  handle: DbHandle,
+  jobId: string,
+  now = new Date(),
+): Promise<boolean> {
+  const { jobs } = handle.schema;
+  const moved = await handle.db
+    .update(jobs)
+    .set({ status: "queued", runAfter: now, updatedAt: now })
+    .where(and(eq(jobs.id, jobId), eq(jobs.status, "blocked")))
+    .returning({ id: jobs.id });
+  return moved.length > 0;
 }
 
 export async function updateProgress(
@@ -360,6 +397,7 @@ export async function findJob(handle: DbHandle, jobId: string): Promise<JobRecor
     lastError: row.lastError,
     progressDone: row.progressDone,
     progressTotal: row.progressTotal,
+    createdAt: row.createdAt,
   };
 }
 
