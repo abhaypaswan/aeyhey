@@ -85,6 +85,11 @@ export const users = pgTable(
     timezone: text("timezone").notNull().default("UTC"),
     role: text("role").$type<UserRole>().notNull().default("owner"),
     createdAt: nowDefault(),
+    /**
+     * When they last used the app or the API, to the hour. Reminders slow down and then
+     * stop for someone who has not been back, and start again when they are.
+     */
+    lastSeenAt: ts("last_seen_at"),
   },
   (t) => ({ emailIdx: uniqueIndex("users_email_idx").on(t.email) }),
 );

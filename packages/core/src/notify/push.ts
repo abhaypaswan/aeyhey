@@ -305,9 +305,16 @@ export function createPushChannel(options: PushChannelOptions): NotificationChan
 
     async deliver(payload: DeliveryPayload) {
       const { title, body } = summarizeForNotification(payload.items);
+      // The last one before reminders stop says so, so the silence after is not a mystery.
+      const note =
+        payload.pace === "last"
+          ? "Reminders are off until you come back."
+          : payload.pace === "weekly"
+            ? "Reminders are weekly until you come back."
+            : null;
       return send(payload.userId, {
         title,
-        body,
+        body: note ? `${body} ${note}` : body,
         path: "/session",
         // One tag per session, so a second notification replaces the first rather than
         // stacking up on the lock screen.

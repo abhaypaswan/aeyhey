@@ -42,6 +42,9 @@ export const pageState = cache(async (): Promise<PageState> => {
   const user = await registry.auth.getUser(await requestFromHeaders());
   if (!user) return { state: "needs_login" };
 
+  // A page load is a visit. Reminders ease off for someone who stops coming back.
+  await repos.markSeen(handle, user.id).catch(() => undefined);
+
   return { state: "ready", context: { scope: repos.scopeFor(handle, user.id), user } };
 });
 

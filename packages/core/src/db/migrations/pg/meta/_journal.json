@@ -85,6 +85,13 @@
       "when": 1795209431213,
       "tag": "0011_drop_email_channel",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795253789370,
+      "tag": "0012_user_last_seen",
+      "breakpoints": true
     }
   ]
 }

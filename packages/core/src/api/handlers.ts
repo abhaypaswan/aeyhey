@@ -85,6 +85,7 @@ import {
 import { describeNextSession, isPaused } from "../scheduler/cadence";
 import { findCardForItem, saveCardAfterAction, updateCardStatus } from "../repos/cards";
 import { applyLinkAction, snapshot } from "../scheduler/scheduler";
+import { markSeen } from "../repos/activity";
 import { enqueue, findJob, resumeBlockedJob } from "../jobs/queue";
 import {
   parseDocumentFile,
@@ -152,7 +153,12 @@ function aiDeps(deps: ApiDeps): AiCallDeps {
 
 export function createApi(deps: ApiDeps) {
   const { handle, env, registry } = deps;
-  const base = { auth: registry.auth, publicUrl: env.PUBLIC_URL };
+  const base = {
+    auth: registry.auth,
+    publicUrl: env.PUBLIC_URL,
+    // Reminders ease off for someone who stops coming back, so a visit is noted.
+    onUser: (user: { id: string }) => markSeen(handle, user.id),
+  };
   const ai = aiDeps(deps);
   const redirectUris = parseRedirectList(env.API_REDIRECT_URIS);
   const scope = (ctx: RouteContext<unknown>) => scopeFor(handle, ctx.user.id);

@@ -23,6 +23,8 @@ import { newId } from "../ids";
 import { scopeFor } from "../repos/context";
 import { loadSettings, toCadenceSettings } from "../repos/settings";
 import { currentSlot, inQuietHours, isPaused } from "../scheduler/cadence";
+import { reminderPace } from "../scheduler/reminder-pace";
+import { lastActiveAt, remindersSentSince } from "../repos/activity";
 import { getOrBuildSession } from "../sessions/service";
 import type { Channel } from "../db/types";
 import type { DeliveryPayload, NotificationChannel } from "./types";
@@ -160,6 +162,14 @@ export async function runReminderLoop(options: ReminderLoopOptions): Promise<Rem
       continue;
     }
 
+    // Someone who has not been back gets fewer reminders, then none until they return.
+    const since = await lastActiveAt(handle, user.id);
+    const pace = reminderPace(since ? await remindersSentSince(handle, user.id, since) : [], slot);
+    if (!pace.send) {
+      result.skipped.push({ userId: user.id, reason: pace.reason });
+      continue;
+    }
+
     // Built once, shared by every channel.
     const payload = await getOrBuildSession(scope, { trigger: "scheduled", now });
 
@@ -176,6 +186,7 @@ export async function runReminderLoop(options: ReminderLoopOptions): Promise<Rem
       nextSessionLabel: payload.nextSessionLabel,
       publicUrl: options.publicUrl,
       expiredSinceLast: 0,
+      ...(pace.pace === "normal" ? {} : { pace: pace.pace }),
     };
 
     for (const channel of enabled) {

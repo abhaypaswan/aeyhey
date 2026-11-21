@@ -13,3 +13,4 @@ export * from "./profile";
 export * from "./agent";
 export * from "./journal";
 export * from "./public-building";
+export * from "./activity";

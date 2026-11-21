@@ -8,6 +8,8 @@
 import type { Channel } from "../db/types";
 import type { CardView } from "../sessions/views";
 
+import type { ReminderPace } from "../scheduler/reminder-pace";
+
 export interface DeliveryPayload {
   userId: string;
   sessionId: string;
@@ -18,6 +20,11 @@ export interface DeliveryPayload {
   publicUrl: string;
   /** Mentioned in the session summary line when any expired (PRD 9.4 rule 5). */
   expiredSinceLast: number;
+  /**
+   * "weekly" once they have stopped coming back and reminders have slowed, "last" for the
+   * final one before they stop (scheduler/reminder-pace.ts). Normal when absent.
+   */
+  pace?: ReminderPace;
 }
 
 export interface DeliveryResult {

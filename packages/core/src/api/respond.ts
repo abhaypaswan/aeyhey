@@ -148,6 +148,11 @@ export interface RouteOptions<Schema extends ZodType | undefined> {
    * Every other route refuses an agent token, so a leaked one cannot read anything.
    */
   allowAgentToken?: boolean;
+  /**
+   * Called with each signed-in user, for noting that they were here. A failure here is
+   * logged by the caller and never fails the request.
+   */
+  onUser?: (user: AuthUser) => Promise<void>;
 }
 
 type BodyOf<Schema> = Schema extends ZodType<infer Output> ? Output : undefined;
@@ -179,6 +184,11 @@ export function route<Schema extends ZodType | undefined = undefined>(
           "agent_token",
           "This token can only report agent sessions and highlights. Sign in to do anything else.",
         );
+      }
+
+      // A coding agent reporting its work is not the person opening Aeyhey.
+      if (user.id && options.onUser && apiTokenScopeFor(req) !== "agent") {
+        await options.onUser(user).catch(() => undefined);
       }
 
       let body: unknown;

@@ -457,6 +457,7 @@ export function createTelegramChannel(options: TelegramChannelOptions): Notifica
             payload.items.length,
             payload.nextSessionLabel,
             newQuestionsLine(payload.items),
+            payload.pace,
           ),
           parseMode: "HTML",
         });

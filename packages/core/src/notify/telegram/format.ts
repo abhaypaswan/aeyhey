@@ -8,6 +8,7 @@
 // Callback data is capped at 64 bytes by Telegram, so card ids are shortened on the way
 // out and matched by suffix on the way back.
 
+import type { ReminderPace } from "../../scheduler/reminder-pace";
 import type { CardView } from "../../sessions/views";
 
 export type TelegramAction =
@@ -196,11 +197,19 @@ export function renderSessionHeader(
   count: number,
   nextSessionLabel: string,
   newQuestions: string | null = null,
+  pace: ReminderPace = "normal",
 ): string {
   return [
     `<b>${count} card${count === 1 ? "" : "s"} for today</b>${newQuestions ? `, ${escapeHtml(newQuestions)}` : ""}`,
-    `<i>Next session: ${nextSessionLabel}</i>`,
+    `<i>${paceLine(pace, nextSessionLabel)}</i>`,
   ].join("\n");
+}
+
+/** The line under the header: when the next one comes, or that they have stopped. */
+export function paceLine(pace: ReminderPace, nextSessionLabel: string): string {
+  if (pace === "last") return "Reminders are off until you come back.";
+  if (pace === "weekly") return "You have not been back for a while, so these now come weekly.";
+  return `Next session: ${nextSessionLabel}`;
 }
 
 /** The result line a message is edited to after an action, replacing the buttons. */

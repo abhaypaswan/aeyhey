@@ -18,6 +18,7 @@ import { resetDemoData } from "../../src/seed/index";
 import { searchLibrary } from "../../src/assistant/search";
 import { listHighlights } from "../../src/repos/agent";
 import { publicPageByHandle, savePublicProfile } from "../../src/repos/public-page";
+import { lastActiveAt, markSeen, remindersSentSince } from "../../src/repos/activity";
 
 const pgUrl = process.env.CORE_TEST_DATABASE_URL;
 
@@ -46,6 +47,23 @@ describe.skipIf(!pgUrl)("Postgres-specific queries", () => {
       expect(claimed?.id).toBe(first);
       expect(claimed?.status).toBe("running");
       expect(await claimNextJob(pg, "test-worker")).toBeNull();
+    } finally {
+      await pg.close();
+    }
+  });
+
+  it("notes a visit, reads the last activity and the reminders sent since", async () => {
+    const pg = await openDb(pgUrl!);
+    try {
+      await runMigrations({ handle: pg });
+      const seeded = await resetDemoData(pg);
+      const userId = seeded!.userId;
+      const seen = new Date(Date.now() + 60 * 60 * 1000);
+      await markSeen(pg, userId, seen);
+      // Within the hour: not written again.
+      await markSeen(pg, userId, new Date(seen.getTime() + 60_000));
+      expect((await lastActiveAt(pg, userId))?.getTime()).toBe(seen.getTime());
+      expect(await remindersSentSince(pg, userId, seen)).toEqual([]);
     } finally {
       await pg.close();
     }
